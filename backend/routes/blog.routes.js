@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const BlogController = require('../controllers/blog.controller');
-const { verifyToken } = require('../middleware/auth.middleware');
+const { verifyToken, optionalAuth } = require('../middleware/auth.middleware');
 
-// Public routes
-router.get('/', BlogController.getAllBlogs);
-router.get('/:id', BlogController.getBlogById);
+// Public routes (with optional auth to allow authors to access their own drafts)
+router.get('/', optionalAuth, BlogController.getAllBlogs);
+router.get('/:id', optionalAuth, BlogController.getBlogById);
 
 // Protected routes (Requires JWT)
 router.post('/', verifyToken, BlogController.createBlog);

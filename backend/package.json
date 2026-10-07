@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node test-module3.js"
+    "test": "node test-module3.js && node test-module4.js",
+    "test:m4": "node test-module4.js"
   },
   "keywords": [
     "express",

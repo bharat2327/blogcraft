@@ -6,31 +6,69 @@ const BlogController = {
   async getAllBlogs(req, res) {
     try {
       const { category, search, status, authorId } = req.query;
-      const query = {};
+      const andConditions = [];
 
-      if (status) {
-        query.status = status;
-      }
-
-      if (category && category !== 'All') {
-        query.category = { $regex: new RegExp(`^${category}$`, 'i') };
-      }
-
-      if (authorId) {
-        if (mongoose.Types.ObjectId.isValid(authorId)) {
-          query.author = authorId;
+      // Status & Draft Privacy Rules:
+      if (status === 'draft') {
+        if (req.user && req.user.id) {
+          andConditions.push({ status: 'draft', author: req.user.id });
+        } else {
+          // Unauthenticated requests cannot read drafts
+          return res.status(200).json({
+            success: true,
+            count: 0,
+            blogs: []
+          });
+        }
+      } else if (status === 'published') {
+        andConditions.push({ status: 'published' });
+      } else {
+        // Status not explicitly provided:
+        if (req.user && req.user.id) {
+          if (authorId && authorId === req.user.id) {
+            // Author querying their own posts (e.g., dashboard)
+            andConditions.push({ author: req.user.id });
+          } else {
+            // Authenticated user browsing feed: public published blogs + own drafts
+            andConditions.push({
+              $or: [
+                { status: 'published' },
+                { author: req.user.id }
+              ]
+            });
+          }
+        } else {
+          // Unauthenticated public request: only published blogs
+          andConditions.push({ status: 'published' });
         }
       }
 
-      if (search) {
-        const searchRegex = new RegExp(search.trim(), 'i');
-        query.$or = [
-          { title: searchRegex },
-          { description: searchRegex },
-          { category: searchRegex },
-          { authorName: searchRegex }
-        ];
+      // Filter by category
+      if (category && category !== 'All') {
+        andConditions.push({ category: { $regex: new RegExp(`^${category}$`, 'i') } });
       }
+
+      // Filter by authorId if requested and not already added
+      if (authorId && mongoose.Types.ObjectId.isValid(authorId)) {
+        if (!andConditions.some(c => c.author && c.author.toString() === authorId.toString())) {
+          andConditions.push({ author: authorId });
+        }
+      }
+
+      // Search by title, description, category, or authorName
+      if (search && search.trim()) {
+        const searchRegex = new RegExp(search.trim(), 'i');
+        andConditions.push({
+          $or: [
+            { title: searchRegex },
+            { description: searchRegex },
+            { category: searchRegex },
+            { authorName: searchRegex }
+          ]
+        });
+      }
+
+      const query = andConditions.length > 0 ? { $and: andConditions } : {};
 
       const blogs = await Blog.find(query)
         .populate('author', 'name email')
@@ -69,6 +107,18 @@ const BlogController = {
           success: false,
           message: `Blog post with ID ${id} not found.`
         });
+      }
+
+      // If blog is draft, only allow its author to view it
+      if (blog.status === 'draft') {
+        const authorId = blog.author ? (blog.author._id || blog.author).toString() : '';
+        const requesterId = req.user ? req.user.id.toString() : '';
+        if (!req.user || authorId !== requesterId) {
+          return res.status(404).json({
+            success: false,
+            message: 'Blog post not found or not published.'
+          });
+        }
       }
 
       return res.status(200).json({

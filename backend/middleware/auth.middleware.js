@@ -35,7 +35,28 @@ function verifyToken(req, res, next) {
   }
 }
 
+function optionalAuth(req, res, next) {
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+
+  if (!authHeader) {
+    return next();
+  }
+
+  const parts = authHeader.split(' ');
+  if (parts.length === 2 && parts[0] === 'Bearer') {
+    try {
+      const decoded = jwt.verify(parts[1], JWT_SECRET);
+      req.user = decoded; // { id, name, email }
+    } catch (err) {
+      // Invalid/expired token ignored in optionalAuth
+    }
+  }
+
+  next();
+}
+
 module.exports = {
   verifyToken,
+  optionalAuth,
   JWT_SECRET
 };
