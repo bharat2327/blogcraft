@@ -1,18 +1,48 @@
-const BlogModel = require('../models/blog.model');
+const mongoose = require('mongoose');
+const Blog = require('../models/Blog');
 
 const BlogController = {
   // GET /api/blogs
   async getAllBlogs(req, res) {
     try {
       const { category, search, status, authorId } = req.query;
-      const blogs = await BlogModel.getAll({ category, search, status, authorId });
+      const query = {};
+
+      if (status) {
+        query.status = status;
+      }
+
+      if (category && category !== 'All') {
+        query.category = { $regex: new RegExp(`^${category}$`, 'i') };
+      }
+
+      if (authorId) {
+        if (mongoose.Types.ObjectId.isValid(authorId)) {
+          query.author = authorId;
+        }
+      }
+
+      if (search) {
+        const searchRegex = new RegExp(search.trim(), 'i');
+        query.$or = [
+          { title: searchRegex },
+          { description: searchRegex },
+          { category: searchRegex },
+          { authorName: searchRegex }
+        ];
+      }
+
+      const blogs = await Blog.find(query)
+        .populate('author', 'name email')
+        .sort({ createdAt: -1 });
+
       return res.status(200).json({
         success: true,
         count: blogs.length,
         blogs
       });
     } catch (err) {
-      console.error('Error fetching blogs:', err);
+      console.error('Error fetching blogs from MongoDB:', err);
       return res.status(500).json({
         success: false,
         message: 'Internal server error retrieving blogs.'
@@ -24,7 +54,15 @@ const BlogController = {
   async getBlogById(req, res) {
     try {
       const { id } = req.params;
-      const blog = await BlogModel.findById(id);
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).json({
+          success: false,
+          message: `Blog post with ID ${id} not found.`
+        });
+      }
+
+      const blog = await Blog.findById(id).populate('author', 'name email');
 
       if (!blog) {
         return res.status(404).json({
@@ -38,6 +76,7 @@ const BlogController = {
         blog
       });
     } catch (err) {
+      console.error('Error retrieving blog:', err);
       return res.status(500).json({
         success: false,
         message: 'Internal server error retrieving blog.'
@@ -78,16 +117,19 @@ const BlogController = {
         });
       }
 
-      const newBlog = await BlogModel.create({
-        title,
-        category,
-        image,
-        description,
-        content,
+      const newBlog = new Blog({
+        title: title.trim(),
+        category: category.trim(),
+        image: image ? image.trim() : 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80',
+        description: description.trim(),
+        content: content.trim(),
         status: status === 'draft' ? 'draft' : 'published',
-        author: req.user.name,
-        authorId: req.user.id
+        author: req.user.id,
+        authorName: req.user.name
       });
+
+      await newBlog.save();
+      await newBlog.populate('author', 'name email');
 
       return res.status(201).json({
         success: true,
@@ -107,17 +149,28 @@ const BlogController = {
   async updateBlog(req, res) {
     try {
       const { id } = req.params;
-      const existing = await BlogModel.findById(id);
 
-      if (!existing) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(404).json({
           success: false,
           message: `Blog with ID ${id} does not exist.`
         });
       }
 
-      // Check ownership (allow original author or demo admin)
-      if (existing.authorId && Number(existing.authorId) !== Number(req.user.id)) {
+      const existingBlog = await Blog.findById(id);
+
+      if (!existingBlog) {
+        return res.status(404).json({
+          success: false,
+          message: `Blog with ID ${id} does not exist.`
+        });
+      }
+
+      // Check ownership
+      const authorIdString = existingBlog.author ? existingBlog.author.toString() : '';
+      const userIdString = req.user.id ? req.user.id.toString() : '';
+
+      if (authorIdString !== userIdString) {
         return res.status(403).json({
           success: false,
           message: 'Permission denied. You can only edit your own blog posts.'
@@ -125,21 +178,21 @@ const BlogController = {
       }
 
       const { title, category, image, description, content, status } = req.body;
-      const updatedFields = {};
 
-      if (title !== undefined) updatedFields.title = title.trim();
-      if (category !== undefined) updatedFields.category = category.trim();
-      if (image !== undefined) updatedFields.image = image.trim();
-      if (description !== undefined) updatedFields.description = description.trim();
-      if (content !== undefined) updatedFields.content = content.trim();
-      if (status !== undefined) updatedFields.status = status;
+      if (title !== undefined) existingBlog.title = title.trim();
+      if (category !== undefined) existingBlog.category = category.trim();
+      if (image !== undefined) existingBlog.image = image.trim();
+      if (description !== undefined) existingBlog.description = description.trim();
+      if (content !== undefined) existingBlog.content = content.trim();
+      if (status !== undefined) existingBlog.status = status;
 
-      const updated = await BlogModel.update(id, updatedFields);
+      await existingBlog.save();
+      await existingBlog.populate('author', 'name email');
 
       return res.status(200).json({
         success: true,
         message: 'Blog updated successfully.',
-        blog: updated
+        blog: existingBlog
       });
     } catch (err) {
       console.error('Error updating blog:', err);
@@ -154,9 +207,17 @@ const BlogController = {
   async deleteBlog(req, res) {
     try {
       const { id } = req.params;
-      const existing = await BlogModel.findById(id);
 
-      if (!existing) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(404).json({
+          success: false,
+          message: `Blog post with ID ${id} not found.`
+        });
+      }
+
+      const existingBlog = await Blog.findById(id);
+
+      if (!existingBlog) {
         return res.status(404).json({
           success: false,
           message: `Blog post with ID ${id} not found.`
@@ -164,20 +225,17 @@ const BlogController = {
       }
 
       // Check ownership
-      if (existing.authorId && Number(existing.authorId) !== Number(req.user.id)) {
+      const authorIdString = existingBlog.author ? existingBlog.author.toString() : '';
+      const userIdString = req.user.id ? req.user.id.toString() : '';
+
+      if (authorIdString !== userIdString) {
         return res.status(403).json({
           success: false,
           message: 'Permission denied. You can only delete your own blog posts.'
         });
       }
 
-      const deleted = await BlogModel.delete(id);
-      if (!deleted) {
-        return res.status(404).json({
-          success: false,
-          message: 'Could not delete blog.'
-        });
-      }
+      await Blog.findByIdAndDelete(id);
 
       return res.status(200).json({
         success: true,

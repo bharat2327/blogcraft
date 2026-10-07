@@ -1,20 +1,34 @@
 /**
  * BlogCraft - Blog Management & Homepage Operations (blog.js)
- * Manages Blog CRUD, Filtering, Instant Search, and Reader Modal
+ * Manages Blog CRUD, Filtering, Instant Search, Reader Modal, and Individual Blog Linking
+ * Connected to MongoDB REST API Backend
  */
 
 // Storage key matches main.js
 const BLOG_STORAGE_KEY = 'blogcraft_blogs';
 
 // ---------------------------------------------------------------------------
-// 1. Data Store Operations
+// 1. Data Store Operations (MongoDB via Express REST API)
 // ---------------------------------------------------------------------------
 
-// In-memory cache synced with backend and localStorage
+// In-memory cache synced with backend
 let cachedBlogs = [];
 
+function getBlogAuthorName(blog) {
+  if (!blog) return 'Author';
+  if (blog.author && typeof blog.author === 'object' && blog.author.name) {
+    return blog.author.name;
+  }
+  return blog.authorName || (typeof blog.author === 'string' ? blog.author : 'Author');
+}
+
+function getBlogId(blog) {
+  if (!blog) return '';
+  return blog._id || blog.id || '';
+}
+
 async function getBlogsAsync(filters = {}) {
-  // Try fetching from Express backend GET /api/blogs
+  // Query Express backend GET /api/blogs (retrieves from MongoDB)
   const queryParams = new URLSearchParams();
   if (filters.category && filters.category !== 'All') queryParams.set('category', filters.category);
   if (filters.search) queryParams.set('search', filters.search);
@@ -26,38 +40,27 @@ async function getBlogsAsync(filters = {}) {
 
   if (res.ok && res.data && res.data.success && Array.isArray(res.data.blogs)) {
     cachedBlogs = res.data.blogs;
-    localStorage.setItem(BLOG_STORAGE_KEY, JSON.stringify(cachedBlogs));
     return cachedBlogs;
   }
 
-  // Graceful fallback to localStorage
-  const local = localStorage.getItem(BLOG_STORAGE_KEY);
-  cachedBlogs = local ? JSON.parse(local) : [];
-  return cachedBlogs;
+  console.warn('Could not retrieve blogs from MongoDB backend:', (res.data && res.data.message) || 'Server unavailable');
+  return [];
 }
 
 function getBlogs() {
-  if (cachedBlogs && cachedBlogs.length > 0) return cachedBlogs;
-  const local = localStorage.getItem(BLOG_STORAGE_KEY);
-  return local ? JSON.parse(local) : [];
-}
-
-function saveBlogs(blogsList) {
-  cachedBlogs = blogsList;
-  localStorage.setItem(BLOG_STORAGE_KEY, JSON.stringify(blogsList));
+  return cachedBlogs;
 }
 
 async function getBlogByIdAsync(id) {
-  const res = await apiRequest(`/blogs/${id}`);
+  const res = await apiRequest(`/blogs/${encodeURIComponent(id)}`);
   if (res.ok && res.data && res.data.success && res.data.blog) {
     return res.data.blog;
   }
-  return getBlogById(id);
+  return null;
 }
 
 function getBlogById(id) {
-  const blogs = getBlogs();
-  return blogs.find(b => String(b.id) === String(id)) || null;
+  return cachedBlogs.find(b => String(b._id || b.id) === String(id)) || null;
 }
 
 async function createBlog(data) {
@@ -67,33 +70,16 @@ async function createBlog(data) {
   });
 
   if (res.ok && res.data && res.data.success && res.data.blog) {
-    await getBlogsAsync(); // Refresh cache
+    await getBlogsAsync(); // Refresh cache from MongoDB
     return res.data.blog;
   }
 
-  // Fallback if backend error
-  const blogs = getBlogs();
-  const currentUser = JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT_USER) || '{}');
-  const newBlog = {
-    id: Date.now(),
-    title: data.title.trim(),
-    category: data.category.trim(),
-    image: data.image ? data.image.trim() : 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80',
-    description: data.description.trim(),
-    content: data.content.trim(),
-    author: currentUser.name || 'Anonymous Author',
-    authorId: currentUser.id || null,
-    date: formatDate(new Date()),
-    status: data.status || 'published',
-    featured: false
-  };
-  blogs.unshift(newBlog);
-  saveBlogs(blogs);
-  return newBlog;
+  const errorMsg = (res.data && res.data.message) || 'Failed to create blog in database.';
+  throw new Error(errorMsg);
 }
 
 async function updateBlog(id, updatedFields) {
-  const res = await apiRequest(`/blogs/${id}`, {
+  const res = await apiRequest(`/blogs/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(updatedFields)
   });
@@ -103,21 +89,12 @@ async function updateBlog(id, updatedFields) {
     return res.data.blog;
   }
 
-  const blogs = getBlogs();
-  const index = blogs.findIndex(b => String(b.id) === String(id));
-  if (index === -1) return null;
-
-  blogs[index] = {
-    ...blogs[index],
-    ...updatedFields,
-    updatedAt: formatDate(new Date())
-  };
-  saveBlogs(blogs);
-  return blogs[index];
+  const errorMsg = (res.data && res.data.message) || 'Failed to update blog in database.';
+  throw new Error(errorMsg);
 }
 
 async function deleteBlog(id) {
-  const res = await apiRequest(`/blogs/${id}`, {
+  const res = await apiRequest(`/blogs/${encodeURIComponent(id)}`, {
     method: 'DELETE'
   });
 
@@ -126,10 +103,8 @@ async function deleteBlog(id) {
     return true;
   }
 
-  let blogs = getBlogs();
-  blogs = blogs.filter(b => String(b.id) !== String(id));
-  saveBlogs(blogs);
-  return true;
+  const errorMsg = (res.data && res.data.message) || 'Failed to delete blog in database.';
+  throw new Error(errorMsg);
 }
 
 // ---------------------------------------------------------------------------
@@ -159,11 +134,12 @@ async function renderHomeContent() {
       (blog.category.toLowerCase() === activeCategory.toLowerCase());
 
     const query = searchQuery.toLowerCase().trim();
+    const authorName = getBlogAuthorName(blog);
     const matchesSearch = !query || 
       blog.title.toLowerCase().includes(query) ||
       blog.description.toLowerCase().includes(query) ||
       blog.category.toLowerCase().includes(query) ||
-      blog.author.toLowerCase().includes(query);
+      authorName.toLowerCase().includes(query);
 
     return matchesCategory && matchesSearch;
   });
@@ -193,14 +169,21 @@ function renderFeaturedSection(publishedBlogs, currentQuery, currentCat) {
     return;
   }
 
+  const blogId = getBlogId(featuredBlog);
+  const authorName = getBlogAuthorName(featuredBlog);
+  const authorInitial = authorName.charAt(0).toUpperCase();
+  const displayDate = featuredBlog.date || (featuredBlog.createdAt ? new Date(featuredBlog.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Recent');
+
   featuredContainer.style.display = 'block';
   featuredContainer.innerHTML = `
     <div class="featured-card">
       <div class="featured-img-wrap">
-        <img src="${escapeHtml(featuredBlog.image)}" 
-             alt="${escapeHtml(featuredBlog.title)}" 
-             loading="lazy"
-             onerror="this.src='https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80'">
+        <a href="blog.html?id=${encodeURIComponent(blogId)}">
+          <img src="${escapeHtml(featuredBlog.image)}" 
+               alt="${escapeHtml(featuredBlog.title)}" 
+               loading="lazy"
+               onerror="this.src='https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80'">
+        </a>
       </div>
       <div class="featured-content">
         <div class="featured-meta">
@@ -208,20 +191,25 @@ function renderFeaturedSection(publishedBlogs, currentQuery, currentCat) {
           <span class="badge badge-warning">★ Featured Story</span>
         </div>
         <h3 class="featured-title">
-          <a href="javascript:void(0)" onclick="openReaderModal(${featuredBlog.id})">${escapeHtml(featuredBlog.title)}</a>
+          <a href="blog.html?id=${encodeURIComponent(blogId)}">${escapeHtml(featuredBlog.title)}</a>
         </h3>
         <p class="featured-desc">${escapeHtml(featuredBlog.description)}</p>
         <div class="post-author-row">
           <div class="author-info">
-            <div class="author-avatar">${featuredBlog.author.charAt(0).toUpperCase()}</div>
+            <div class="author-avatar">${authorInitial}</div>
             <div>
-              <div class="author-name">${escapeHtml(featuredBlog.author)}</div>
-              <div class="post-date">${escapeHtml(featuredBlog.date)}</div>
+              <div class="author-name">${escapeHtml(authorName)}</div>
+              <div class="post-date">${escapeHtml(displayDate)}</div>
             </div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="openReaderModal(${featuredBlog.id})">
-            Read Full Article &rarr;
-          </button>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <button class="btn btn-secondary btn-sm" onclick="openReaderModal('${blogId}')" title="Quick Preview">
+              Quick View
+            </button>
+            <a href="blog.html?id=${encodeURIComponent(blogId)}" class="btn btn-primary btn-sm">
+              Read Article &rarr;
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -244,37 +232,51 @@ function renderBlogsGrid(blogs) {
     return;
   }
 
-  gridContainer.innerHTML = blogs.map(blog => `
-    <article class="blog-card" id="blog-card-${blog.id}">
-      <div class="card-img-wrap">
-        <span class="badge badge-primary card-badge">${escapeHtml(blog.category)}</span>
-        <img src="${escapeHtml(blog.image)}" 
-             alt="${escapeHtml(blog.title)}" 
-             loading="lazy"
-             onerror="this.src='https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80'">
-      </div>
-      <div class="card-content">
-        <h3 class="card-title">
-          <a href="javascript:void(0)" onclick="openReaderModal(${blog.id})">${escapeHtml(blog.title)}</a>
-        </h3>
-        <p class="card-desc">${escapeHtml(blog.description)}</p>
-        <div class="card-footer">
-          <div class="author-info">
-            <div class="author-avatar" style="width:30px; height:30px; font-size:0.75rem;">
-              ${blog.author.charAt(0).toUpperCase()}
+  gridContainer.innerHTML = blogs.map(blog => {
+    const blogId = getBlogId(blog);
+    const authorName = getBlogAuthorName(blog);
+    const authorInitial = authorName.charAt(0).toUpperCase();
+    const displayDate = blog.date || (blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Recent');
+
+    return `
+      <article class="blog-card" id="blog-card-${blogId}">
+        <div class="card-img-wrap">
+          <span class="badge badge-primary card-badge">${escapeHtml(blog.category)}</span>
+          <a href="blog.html?id=${encodeURIComponent(blogId)}">
+            <img src="${escapeHtml(blog.image)}" 
+                 alt="${escapeHtml(blog.title)}" 
+                 loading="lazy"
+                 onerror="this.src='https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80'">
+          </a>
+        </div>
+        <div class="card-content">
+          <h3 class="card-title">
+            <a href="blog.html?id=${encodeURIComponent(blogId)}">${escapeHtml(blog.title)}</a>
+          </h3>
+          <p class="card-desc">${escapeHtml(blog.description)}</p>
+          <div class="card-footer">
+            <div class="author-info">
+              <div class="author-avatar" style="width:30px; height:30px; font-size:0.75rem;">
+                ${authorInitial}
+              </div>
+              <div>
+                <div class="author-name" style="font-size:0.8rem;">${escapeHtml(authorName)}</div>
+                <div class="post-date" style="font-size:0.725rem;">${escapeHtml(displayDate)}</div>
+              </div>
             </div>
-            <div>
-              <div class="author-name" style="font-size:0.8rem;">${escapeHtml(blog.author)}</div>
-              <div class="post-date" style="font-size:0.725rem;">${escapeHtml(blog.date)}</div>
+            <div style="display:flex; gap:0.35rem; align-items:center;">
+              <button class="card-readmore-btn" onclick="openReaderModal('${blogId}')" title="Quick Read">
+                Preview
+              </button>
+              <a href="blog.html?id=${encodeURIComponent(blogId)}" class="card-readmore-btn" style="color:var(--primary); font-weight:700;">
+                Read &rarr;
+              </a>
             </div>
           </div>
-          <button class="card-readmore-btn" onclick="openReaderModal(${blog.id})">
-            Read More &rarr;
-          </button>
         </div>
-      </div>
-    </article>
-  `).join('');
+      </article>
+    `;
+  }).join('');
 }
 
 // ---------------------------------------------------------------------------
@@ -365,7 +367,8 @@ function setupReaderModal() {
           <h2 class="modal-article-title" id="reader-title">Blog Title</h2>
           <div class="modal-article-content" id="reader-content"></div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+          <a href="#" id="reader-full-page-link" class="btn btn-primary btn-sm">Open Dedicated Page &rarr;</a>
           <button class="btn btn-secondary btn-sm" id="reader-done-btn">Close Article</button>
         </div>
       </div>
@@ -398,11 +401,21 @@ async function openReaderModal(blogId) {
   setupReaderModal();
   const modal = document.getElementById('blog-reader-modal');
 
+  const authorName = getBlogAuthorName(blog);
+  const authorInitial = authorName.charAt(0).toUpperCase();
+  const displayDate = blog.date || (blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Recent');
+  const actualId = getBlogId(blog);
+
   document.getElementById('reader-category').textContent = blog.category;
   document.getElementById('reader-title').textContent = blog.title;
-  document.getElementById('reader-author').textContent = blog.author;
-  document.getElementById('reader-date').textContent = blog.date;
-  document.getElementById('reader-avatar').textContent = blog.author.charAt(0).toUpperCase();
+  document.getElementById('reader-author').textContent = authorName;
+  document.getElementById('reader-date').textContent = displayDate;
+  document.getElementById('reader-avatar').textContent = authorInitial;
+
+  const fullPageLink = document.getElementById('reader-full-page-link');
+  if (fullPageLink) {
+    fullPageLink.href = `blog.html?id=${encodeURIComponent(actualId)}`;
+  }
 
   const imgElem = document.getElementById('reader-img');
   imgElem.style.display = 'block';
@@ -411,9 +424,8 @@ async function openReaderModal(blogId) {
 
   // Format content paragraphs
   const contentContainer = document.getElementById('reader-content');
-  const paragraphs = blog.content.split('\n\n').filter(p => p.trim());
+  const paragraphs = (blog.content || '').split('\n\n').filter(p => p.trim());
   contentContainer.innerHTML = paragraphs.map(p => {
-    // Preserve line breaks within paragraph if any
     const formatted = escapeHtml(p).replace(/\n/g, '<br>');
     return `<p>${formatted}</p>`;
   }).join('');

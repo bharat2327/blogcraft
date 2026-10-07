@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog Details — BlogCraft</title>
+  <meta name="description" content="Read full blog article with insights on design, engineering, and web development.">
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Individual Blog Page Dedicated Styling */
+    .article-container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 5rem 1.5rem;
+    }
+
+    .article-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .article-breadcrumb a {
+      color: var(--text-secondary);
+      transition: color var(--transition-fast);
+    }
+
+    .article-breadcrumb a:hover {
+      color: var(--primary);
+    }
+
+    .article-header {
+      margin-bottom: 2.5rem;
+    }
+
+    .article-category-badge {
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+
+    .article-title {
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 800;
+      line-height: 1.25;
+      color: var(--text-primary);
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .article-meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.25rem 0;
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .article-author-info {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+    }
+
+    .article-author-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+
+    .article-author-name {
+      font-weight: 700;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+    }
+
+    .article-date-row {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .article-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .article-hero-image-wrapper {
+      margin: 2.5rem 0;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-color);
+      max-height: 480px;
+      background: var(--bg-subtle);
+    }
+
+    .article-hero-image {
+      width: 100%;
+      height: 100%;
+      max-height: 480px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .article-lead {
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 2rem;
+      padding-left: 1.25rem;
+      border-left: 4px solid var(--primary);
+    }
+
+    .article-body-content {
+      font-size: 1.075rem;
+      line-height: 1.85;
+      color: var(--text-primary);
+      margin-bottom: 3rem;
+    }
+
+    .article-body-content p {
+      margin-bottom: 1.5rem;
+    }
+
+    .article-footer-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    /* Loading skeleton */
+    .skeleton-box {
+      background: linear-gradient(90deg, var(--bg-subtle) 25%, #e2e8f0 50%, var(--bg-subtle) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.5s infinite;
+      border-radius: var(--radius-sm);
+    }
+
+    @keyframes skeleton-pulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .not-found-card {
+      text-align: center;
+      padding: 5rem 2rem;
+      background: var(--bg-surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+      margin-top: 2rem;
+    }
+
+    .not-found-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar" role="banner">
+    <div class="container">
+      <a href="index.html" class="brand-logo" aria-label="BlogCraft Home">
+        <div class="logo-icon">B</div>
+        <div class="logo-text">Blog<span>Craft</span></div>
+      </a>
+
+      <!-- Desktop & Mobile Nav Links -->
+      <nav id="nav-links" class="nav-links" aria-label="Primary Navigation">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="index.html#explore-section" class="nav-link">Explore</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+      </nav>
+
+      <!-- Dynamic Auth / User Action Buttons -->
+      <div class="nav-actions" id="nav-actions">
+        <a href="login.html" class="btn btn-secondary btn-sm" id="nav-login-btn">Login</a>
+        <a href="register.html" class="btn btn-primary btn-sm" id="nav-register-btn">Register</a>
+      </div>
+
+      <!-- Mobile Hamburger Toggle -->
+      <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        ☰
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content: Blog Details -->
+  <main class="site-main">
+    <div class="article-container" id="article-main-container">
+
+      <!-- Loading State Skeleton -->
+      <div id="article-loading-state">
+        <div class="skeleton-box" style="width: 25%; height: 16px; margin-bottom: 1.5rem;"></div>
+        <div class="skeleton-box" style="width: 20%; height: 28px; margin-bottom: 1rem;"></div>
+        <div class="skeleton-box" style="width: 90%; height: 48px; margin-bottom: 1.5rem;"></div>
+        <div class="skeleton-box" style="width: 100%; height: 60px; margin-bottom: 2rem;"></div>
+        <div class="skeleton-box" style="width: 100%; height: 350px; margin-bottom: 2rem; border-radius: 16px;"></div>
+        <div class="skeleton-box" style="width: 100%; height: 20px; margin-bottom: 0.75rem;"></div>
+        <div class="skeleton-box" style="width: 95%; height: 20px; margin-bottom: 0.75rem;"></div>
+        <div class="skeleton-box" style="width: 80%; height: 20px; margin-bottom: 0.75rem;"></div>
+      </div>
+
+      <!-- Article Render Target -->
+      <article id="article-content-wrapper" style="display: none;">
+        <!-- Injected via JavaScript -->
+      </article>
+
+      <!-- Not Found State -->
+      <div id="article-not-found" class="not-found-card" style="display: none;">
+        <div class="not-found-icon">📑</div>
+        <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary);">Blog Post Not Found</h2>
+        <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 2rem auto;">
+          The blog post you are looking for does not exist, has an invalid identifier, or was removed from the database.
+        </p>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+          <a href="index.html" class="btn btn-primary btn-sm">&larr; Back to All Articles</a>
+          <a href="dashboard.html" class="btn btn-secondary btn-sm">Go to Dashboard</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <div class="footer-brand">
+        <div class="brand-logo">
+          <div class="logo-icon">B</div>
+          <div class="logo-text">Blog<span>Craft</span></div>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">
+          Empowering modern developers, writers, and thinkers with rich engineering insights and persistent MongoDB data architecture.
+        </p>
+      </div>
+      <div class="footer-copy">
+        &copy; 2026 BlogCraft. Module 3 — Database Integration Completed.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/blog.js"></script>
+  <script>
+    // Blog Details Page Controller
+    document.addEventListener('DOMContentLoaded', async () => {
+      const loadingState = document.getElementById('article-loading-state');
+      const articleWrapper = document.getElementById('article-content-wrapper');
+      const notFoundState = document.getElementById('article-not-found');
+
+      // Read ID from URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const blogId = urlParams.get('id');
+
+      if (!blogId || !blogId.trim()) {
+        loadingState.style.display = 'none';
+        notFoundState.style.display = 'block';
+        return;
+      }
+
+      try {
+        // Query backend GET /api/blogs/:id
+        const res = await apiRequest(`/blogs/${encodeURIComponent(blogId.trim())}`);
+
+        loadingState.style.display = 'none';
+
+        if (!res.ok || !res.data || !res.data.success || !res.data.blog) {
+          notFoundState.style.display = 'block';
+          return;
+        }
+
+        const blog = res.data.blog;
+        const authorName = (blog.author && blog.author.name) || blog.authorName || 'Author';
+        const authorInitial = authorName.charAt(0).toUpperCase();
+        const displayDate = blog.date || (blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Recent');
+
+        // Estimate read time
+        const wordCount = (blog.content || '').split(/\s+/).length;
+        const readMinutes = Math.max(1, Math.ceil(wordCount / 200));
+
+        // Format paragraphs
+        const formattedParagraphs = (blog.content || '')
+          .split('\n\n')
+          .filter(p => p.trim())
+          .map(p => `<p>${escapeHtml(p.trim()).replace(/\n/g, '<br>')}</p>`)
+          .join('');
+
+        // Update page title
+        document.title = `${blog.title} — BlogCraft`;
+
+        articleWrapper.innerHTML = `
+          <!-- Breadcrumb Navigation -->
+          <nav class="article-breadcrumb" aria-label="Breadcrumb">
+            <a href="index.html">Home</a>
+            <span>/</span>
+            <a href="index.html#explore-section">${escapeHtml(blog.category)}</a>
+            <span>/</span>
+            <span style="color: var(--text-primary); font-weight: 500;">${escapeHtml(blog.title.length > 35 ? blog.title.slice(0, 35) + '...' : blog.title)}</span>
+          </nav>
+
+          <!-- Article Header -->
+          <header class="article-header">
+            <div class="article-category-badge">
+              <span class="badge badge-primary">${escapeHtml(blog.category)}</span>
+            </div>
+            <h1 class="article-title">${escapeHtml(blog.title)}</h1>
+
+            <div class="article-meta-bar">
+              <div class="article-author-info">
+                <div class="article-author-avatar">${authorInitial}</div>
+                <div>
+                  <div class="article-author-name">${escapeHtml(authorName)}</div>
+                  <div class="article-date-row">
+                    <span>📅 ${escapeHtml(displayDate)}</span>
+                    <span>•</span>
+                    <span>⏱ ${readMinutes} min read</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="article-actions-row">
+                <button class="btn btn-secondary btn-sm" id="btn-share-article" title="Copy article link">
+                  🔗 Share Article
+                </button>
+                <a href="index.html" class="btn btn-secondary btn-sm">
+                  &larr; Back
+                </a>
+              </div>
+            </div>
+          </header>
+
+          <!-- Hero Image -->
+          <div class="article-hero-image-wrapper">
+            <img class="article-hero-image" 
+                 src="${escapeHtml(blog.image)}" 
+                 alt="${escapeHtml(blog.title)}"
+                 loading="eager"
+                 onerror="this.src='https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80'">
+          </div>
+
+          <!-- Lead Description -->
+          <div class="article-lead">
+            ${escapeHtml(blog.description)}
+          </div>
+
+          <!-- Full Article Content -->
+          <div class="article-body-content">
+            ${formattedParagraphs}
+          </div>
+
+          <!-- Footer Navigation -->
+          <div class="article-footer-nav">
+            <a href="index.html" class="btn btn-secondary btn-sm">
+              &larr; Back to All Articles
+            </a>
+            <div style="display:flex; gap:0.5rem;">
+              <a href="dashboard.html" class="btn btn-primary btn-sm">
+                Go to Dashboard &rarr;
+              </a>
+            </div>
+          </div>
+        `;
+
+        articleWrapper.style.display = 'block';
+
+        // Share button handler
+        const shareBtn = document.getElementById('btn-share-article');
+        if (shareBtn) {
+          shareBtn.addEventListener('click', async () => {
+            try {
+              await navigator.clipboard.writeText(window.location.href);
+              showToast('Article URL copied to clipboard!', 'success');
+            } catch (e) {
+              showToast('Link: ' + window.location.href, 'info');
+            }
+          });
+        }
+
+      } catch (err) {
+        console.error('Error fetching blog details:', err);
+        loadingState.style.display = 'none';
+        notFoundState.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

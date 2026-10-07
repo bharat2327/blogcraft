@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const UserModel = require('../models/user.model');
+const User = require('../models/User');
 const { JWT_SECRET } = require('../middleware/auth.middleware');
 
 function isValidEmail(email) {
@@ -7,7 +7,20 @@ function isValidEmail(email) {
   return re.test(String(email).toLowerCase().trim());
 }
 
+function generateToken(user) {
+  return jwt.sign(
+    {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email
+    },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+}
+
 const AuthController = {
+  // POST /api/auth/register
   async register(req, res) {
     try {
       const { name, email, password } = req.body;
@@ -47,8 +60,8 @@ const AuthController = {
         });
       }
 
-      // Check if user already exists
-      const existingUser = await UserModel.findByEmail(email);
+      // Check whether user with this email already exists in MongoDB
+      const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
       if (existingUser) {
         return res.status(409).json({
           success: false,
@@ -56,20 +69,34 @@ const AuthController = {
         });
       }
 
-      // Create new user (password hashed in UserModel)
-      const newUser = await UserModel.create({ name, email, password });
+      // Create new MongoDB user document
+      const newUser = new User({
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        password: password
+      });
+
+      await newUser.save();
+      const token = generateToken(newUser);
 
       return res.status(201).json({
         success: true,
         message: 'User registered successfully',
+        token,
         user: {
-          id: newUser.id,
+          id: newUser._id,
           name: newUser.name,
           email: newUser.email
         }
       });
     } catch (err) {
       console.error('Registration error:', err);
+      if (err.code === 11000) {
+        return res.status(409).json({
+          success: false,
+          message: 'Email already registered'
+        });
+      }
       return res.status(500).json({
         success: false,
         message: 'Internal server error during registration.'
@@ -77,6 +104,7 @@ const AuthController = {
     }
   },
 
+  // POST /api/auth/login
   async login(req, res) {
     try {
       const { email, password } = req.body;
@@ -88,7 +116,8 @@ const AuthController = {
         });
       }
 
-      const user = await UserModel.findByEmail(email);
+      // Find user in MongoDB
+      const user = await User.findOne({ email: email.toLowerCase().trim() });
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -96,7 +125,8 @@ const AuthController = {
         });
       }
 
-      const isMatch = await UserModel.comparePassword(password, user.password);
+      // Compare password with bcrypt
+      const isMatch = await user.comparePassword(password);
       if (!isMatch) {
         return res.status(401).json({
           success: false,
@@ -104,23 +134,15 @@ const AuthController = {
         });
       }
 
-      // Issue JWT
-      const token = jwt.sign(
-        {
-          id: user.id,
-          name: user.name,
-          email: user.email
-        },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
+      // Generate JWT
+      const token = generateToken(user);
 
       return res.status(200).json({
         success: true,
         message: 'Login successful',
         token,
         user: {
-          id: user.id,
+          id: user._id.toString(),
           name: user.name,
           email: user.email
         }
@@ -134,9 +156,10 @@ const AuthController = {
     }
   },
 
+  // GET /api/auth/me (Protected)
   async getMe(req, res) {
     try {
-      const user = await UserModel.findById(req.user.id);
+      const user = await User.findById(req.user.id).select('-password');
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -147,7 +170,7 @@ const AuthController = {
       return res.status(200).json({
         success: true,
         user: {
-          id: user.id,
+          id: user._id.toString(),
           name: user.name,
           email: user.email
         }

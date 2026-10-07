@@ -45,8 +45,24 @@ function populateUserProfile(user) {
   }
 }
 
-function renderDashboardStats() {
+function getUserBlogs() {
   const blogs = getBlogs();
+  const currentUser = getCurrentUser();
+  if (!currentUser) return blogs;
+
+  return blogs.filter(b => {
+    if (!b.author) return false;
+    if (typeof b.author === 'object') {
+      return (b.author._id && String(b.author._id) === String(currentUser.id)) ||
+             (b.author.id && String(b.author.id) === String(currentUser.id)) ||
+             (b.author.email && currentUser.email && b.author.email.toLowerCase() === currentUser.email.toLowerCase());
+    }
+    return String(b.author) === String(currentUser.id) || b.author === currentUser.name;
+  });
+}
+
+function renderDashboardStats() {
+  const blogs = getUserBlogs();
   const total = blogs.length;
   const published = blogs.filter(b => b.status === 'published').length;
   const drafts = blogs.filter(b => b.status === 'draft').length;
@@ -64,14 +80,14 @@ function renderDashboardTable(filterQuery = '') {
   const tableBody = document.getElementById('dashboard-table-body');
   if (!tableBody) return;
 
-  const blogs = getBlogs();
+  const blogs = getUserBlogs();
   const query = filterQuery.toLowerCase().trim();
 
   const filteredBlogs = blogs.filter(b => {
     if (!query) return true;
-    return b.title.toLowerCase().includes(query) ||
-           b.category.toLowerCase().includes(query) ||
-           b.status.toLowerCase().includes(query);
+    return (b.title && b.title.toLowerCase().includes(query)) ||
+           (b.category && b.category.toLowerCase().includes(query)) ||
+           (b.status && b.status.toLowerCase().includes(query));
   });
 
   if (filteredBlogs.length === 0) {
@@ -91,37 +107,49 @@ function renderDashboardTable(filterQuery = '') {
   }
 
   tableBody.innerHTML = filteredBlogs.map(blog => {
+    const blogId = blog._id || blog.id;
     const isPublished = blog.status === 'published';
     const statusBadge = isPublished
       ? `<span class="badge badge-success" title="Published online">● Published</span>`
       : `<span class="badge badge-warning" title="Saved as draft">○ Draft</span>`;
 
+    const authorName = (typeof blog.author === 'object' && blog.author !== null)
+      ? (blog.author.name || 'You')
+      : (blog.author || 'You');
+
+    const formattedDate = typeof formatDate === 'function'
+      ? formatDate(blog.createdAt || blog.date)
+      : (blog.date || new Date(blog.createdAt).toLocaleDateString());
+
     return `
-      <tr id="table-row-${blog.id}">
+      <tr id="table-row-${blogId}">
         <td>
           <div class="table-blog-cell">
-            <img class="table-blog-thumb" src="${escapeHtml(blog.image)}" alt="${escapeHtml(blog.title)}" onerror="this.src='https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=150&q=80'">
+            <img class="table-blog-thumb" src="${escapeHtml(blog.image || '')}" alt="${escapeHtml(blog.title || '')}" onerror="this.src='https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=150&q=80'">
             <div>
-              <div class="table-blog-title" title="${escapeHtml(blog.title)}">${escapeHtml(blog.title)}</div>
-              <small style="color: var(--text-muted);">${escapeHtml(blog.author)}</small>
+              <div class="table-blog-title" title="${escapeHtml(blog.title || '')}">${escapeHtml(blog.title || '')}</div>
+              <small style="color: var(--text-muted);">${escapeHtml(authorName)}</small>
             </div>
           </div>
         </td>
         <td>
-          <span class="badge badge-primary">${escapeHtml(blog.category)}</span>
+          <span class="badge badge-primary">${escapeHtml(blog.category || 'General')}</span>
         </td>
         <td>
           ${statusBadge}
         </td>
         <td style="color: var(--text-secondary); font-size: 0.875rem;">
-          ${escapeHtml(blog.date)}
+          ${escapeHtml(formattedDate)}
         </td>
         <td>
           <div class="table-actions">
-            <a href="create-blog.html?edit=${blog.id}" class="btn btn-secondary btn-sm" title="Edit this blog">
+            <a href="blog.html?id=${blogId}" class="btn btn-secondary btn-sm" title="View blog" target="_blank">
+              👁 View
+            </a>
+            <a href="create-blog.html?edit=${blogId}" class="btn btn-secondary btn-sm" title="Edit this blog">
               ✎ Edit
             </a>
-            <button class="btn btn-danger btn-sm" onclick="promptDeleteBlog(${blog.id})" title="Delete this blog">
+            <button class="btn btn-danger btn-sm" onclick="promptDeleteBlog('${blogId}')" title="Delete this blog">
               🗑 Delete
             </button>
           </div>

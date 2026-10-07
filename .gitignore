@@ -56,3 +56,5 @@ out/
 .cache/
 tmp/
 scratch/
+backend/data/mongodb_data/
+mongodb_data/
