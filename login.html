@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — BlogCraft</title>
+  <meta name="description" content="Sign in to your BlogCraft author account to manage and publish your articles.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar" role="banner">
+    <div class="container">
+      <a href="index.html" class="brand-logo" aria-label="BlogCraft Home">
+        <div class="logo-icon">B</div>
+        <div class="logo-text">Blog<span>Craft</span></div>
+      </a>
+
+      <nav id="nav-links" class="nav-links" aria-label="Primary Navigation">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+      </nav>
+
+      <div class="nav-actions" id="nav-actions">
+        <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+      </div>
+
+      <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        ☰
+      </button>
+    </div>
+  </header>
+
+  <!-- Login Container -->
+  <main class="auth-page">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-header-icon" aria-hidden="true">🔑</div>
+        <h1 class="auth-title">Welcome Back</h1>
+        <p class="auth-subtitle">Sign in to manage and publish your stories</p>
+      </div>
+
+      <!-- Quick Demo Account Hint / Auto-fill -->
+      <div class="demo-account-hint">
+        <div>
+          <strong>Demo Account:</strong> demo@example.com (pass: password123)
+        </div>
+        <button type="button" id="fill-demo-btn">Auto-Fill</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" novalidate>
+        <!-- Email Field -->
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address</label>
+          <div class="form-control-wrapper">
+            <input type="email" 
+                   id="email" 
+                   name="email" 
+                   class="form-input" 
+                   placeholder="you@example.com" 
+                   required 
+                   autocomplete="email">
+          </div>
+          <span class="field-error-msg" id="email-error"></span>
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <div class="form-control-wrapper">
+            <input type="password" 
+                   id="password" 
+                   name="password" 
+                   class="form-input" 
+                   placeholder="Enter your password" 
+                   required 
+                   autocomplete="current-password">
+            <button type="button" 
+                    class="password-toggle-btn" 
+                    id="toggle-password" 
+                    aria-label="Toggle password visibility">👁️</button>
+          </div>
+          <span class="field-error-msg" id="password-error"></span>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 0.5rem;" id="login-submit-btn">
+          Sign In to Dashboard
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Don't have an account? <a href="register.html">Create one here</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

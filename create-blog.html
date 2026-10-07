@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Write Article — BlogCraft</title>
+  <meta name="description" content="Create or edit your technical blog articles and guides on BlogCraft.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar" role="banner">
+    <div class="container">
+      <a href="index.html" class="brand-logo" aria-label="BlogCraft Home">
+        <div class="logo-icon">B</div>
+        <div class="logo-text">Blog<span>Craft</span></div>
+      </a>
+
+      <nav id="nav-links" class="nav-links" aria-label="Primary Navigation">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+      </nav>
+
+      <div class="nav-actions" id="nav-actions">
+        <!-- Injected dynamically by main.js -->
+      </div>
+
+      <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        ☰
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Creation Form Page -->
+  <main class="site-main" style="padding: 3rem 1.5rem;">
+    <div class="container">
+
+      <div class="form-card">
+        <div style="margin-bottom: 2rem;">
+          <a href="dashboard.html" class="btn btn-ghost btn-sm" style="margin-bottom: 0.75rem;">
+            &larr; Back to Dashboard
+          </a>
+          <h1 id="form-page-title" style="font-size: 1.85rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em;">
+            Create New Article
+          </h1>
+          <p style="color: var(--text-muted); font-size: 0.95rem;">
+            Draft your insights or publish immediately for all readers to discover.
+          </p>
+        </div>
+
+        <form id="blog-form" novalidate>
+          <!-- Blog Title -->
+          <div class="form-group">
+            <label for="blog-title" class="form-label">Article Title <span style="color: var(--danger)">*</span></label>
+            <input type="text" 
+                   id="blog-title" 
+                   name="title" 
+                   class="form-input" 
+                   placeholder="e.g. Architectural Patterns in Modern Web Applications" 
+                   required>
+            <span class="field-error-msg" id="blog-title-error"></span>
+          </div>
+
+          <!-- Category Selection -->
+          <div class="form-group">
+            <label for="blog-category" class="form-label">Category <span style="color: var(--danger)">*</span></label>
+            <select id="blog-category" name="category" class="form-select" required>
+              <option value="">Select a Category</option>
+              <option value="Web Development">Web Development</option>
+              <option value="CSS & Styling">CSS & Styling</option>
+              <option value="JavaScript">JavaScript</option>
+              <option value="UI/UX Design">UI/UX Design</option>
+              <option value="Accessibility">Accessibility</option>
+              <option value="Performance">Performance</option>
+              <option value="DevOps & Tools">DevOps & Tools</option>
+            </select>
+            <span class="field-error-msg" id="blog-category-error"></span>
+          </div>
+
+          <!-- Featured Image URL -->
+          <div class="form-group">
+            <label for="blog-image" class="form-label">Featured Image URL</label>
+            <input type="url" 
+                   id="blog-image" 
+                   name="image" 
+                   class="form-input" 
+                   placeholder="https://images.unsplash.com/photo-...">
+            
+            <!-- Quick Preset Selectors for convenience -->
+            <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Presets:</span>
+              <button type="button" class="btn btn-secondary btn-sm image-preset-btn" data-url="https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80">💻 Coding</button>
+              <button type="button" class="btn btn-secondary btn-sm image-preset-btn" data-url="https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80">🎨 Design</button>
+              <button type="button" class="btn btn-secondary btn-sm image-preset-btn" data-url="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80">🚀 Future Tech</button>
+              <button type="button" class="btn btn-secondary btn-sm image-preset-btn" data-url="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80">📝 Workspace</button>
+            </div>
+
+            <!-- Live Image Preview Box -->
+            <div class="image-preview-box">
+              <img id="image-preview-element" src="" alt="Preview" style="display: none;" onerror="this.style.display='none'">
+              <div id="image-preview-placeholder" class="image-preview-placeholder">
+                <span class="icon">🖼️</span>
+                <span>Enter an image URL or click a preset above for live preview</span>
+              </div>
+            </div>
+            <span class="field-error-msg" id="blog-image-error"></span>
+          </div>
+
+          <!-- Short Description -->
+          <div class="form-group">
+            <label for="blog-description" class="form-label">Short Summary <span style="color: var(--danger)">*</span></label>
+            <textarea id="blog-description" 
+                      name="description" 
+                      class="form-textarea" 
+                      rows="2" 
+                      placeholder="A crisp 1-2 sentence overview for cards and search results..." 
+                      required></textarea>
+            <span class="field-error-msg" id="blog-description-error"></span>
+          </div>
+
+          <!-- Full Content -->
+          <div class="form-group">
+            <label for="blog-content" class="form-label">Full Article Content <span style="color: var(--danger)">*</span></label>
+            <textarea id="blog-content" 
+                      name="content" 
+                      class="form-textarea" 
+                      rows="8" 
+                      placeholder="Write your article paragraphs here. Separate paragraphs with double newlines..." 
+                      required></textarea>
+            <span class="field-error-msg" id="blog-content-error"></span>
+          </div>
+
+          <!-- Action Buttons Bar -->
+          <div class="form-action-bar">
+            <a href="dashboard.html" class="btn btn-secondary" id="btn-cancel">
+              Cancel
+            </a>
+            <button type="button" class="btn btn-outline" id="btn-draft">
+              💾 Save Draft
+            </button>
+            <button type="submit" class="btn btn-primary" id="btn-publish">
+              🚀 Publish Article
+            </button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/blog.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

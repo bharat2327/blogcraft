@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Author Dashboard — BlogCraft</title>
+  <meta name="description" content="Manage your published stories, drafts, analytics, and profile in BlogCraft.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar" role="banner">
+    <div class="container">
+      <a href="index.html" class="brand-logo" aria-label="BlogCraft Home">
+        <div class="logo-icon">B</div>
+        <div class="logo-text">Blog<span>Craft</span></div>
+      </a>
+
+      <nav id="nav-links" class="nav-links" aria-label="Primary Navigation">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="dashboard.html" class="nav-link active">Dashboard</a>
+      </nav>
+
+      <div class="nav-actions" id="nav-actions">
+        <!-- Injected dynamically by main.js -->
+      </div>
+
+      <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        ☰
+      </button>
+    </div>
+  </header>
+
+  <!-- Dashboard Layout: Sidebar + Main Content -->
+  <div class="dashboard-layout">
+
+    <!-- Sidebar Navigation -->
+    <aside class="dashboard-sidebar" aria-label="Sidebar Navigation">
+      <div>
+        <!-- Profile Card -->
+        <div class="sidebar-profile">
+          <div class="sidebar-avatar user-avatar-text">U</div>
+          <div class="profile-meta">
+            <h4 class="user-display-name">Author</h4>
+            <p class="user-display-email">author@example.com</p>
+          </div>
+        </div>
+
+        <!-- Links -->
+        <ul class="sidebar-nav">
+          <li>
+            <a href="dashboard.html" class="sidebar-nav-link active">
+              <span class="icon">📊</span>
+              <span>All Articles</span>
+            </a>
+          </li>
+          <li>
+            <a href="create-blog.html" class="sidebar-nav-link">
+              <span class="icon">✍️</span>
+              <span>Write Article</span>
+            </a>
+          </li>
+          <li>
+            <a href="index.html" class="sidebar-nav-link">
+              <span class="icon">🌐</span>
+              <span>View Public Blog</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-outline btn-sm" style="width: 100%;" onclick="logoutUser()">
+          🚪 Logout Account
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Dashboard Area -->
+    <main class="dashboard-main">
+
+      <!-- Header Banner -->
+      <div class="dashboard-header">
+        <div>
+          <h1 id="dashboard-welcome-heading">Welcome back 👋</h1>
+          <p>Here is an overview of your publication activity and drafts.</p>
+        </div>
+        <div>
+          <a href="create-blog.html" class="btn btn-primary" id="btn-create-post-top">
+            + Create New Blog
+          </a>
+        </div>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div>
+            <div class="stat-label">Total Articles</div>
+            <div class="stat-value" id="stat-total-blogs">0</div>
+          </div>
+          <div class="stat-icon blue">📚</div>
+        </div>
+
+        <div class="stat-card">
+          <div>
+            <div class="stat-label">Published Articles</div>
+            <div class="stat-value" id="stat-published-blogs">0</div>
+          </div>
+          <div class="stat-icon green">🚀</div>
+        </div>
+
+        <div class="stat-card">
+          <div>
+            <div class="stat-label">Saved Drafts</div>
+            <div class="stat-value" id="stat-drafts-blogs">0</div>
+          </div>
+          <div class="stat-icon amber">📝</div>
+        </div>
+      </div>
+
+      <!-- Blog Management Table Card -->
+      <div class="table-card">
+        <div class="table-header">
+          <h2 class="table-title">Manage Articles</h2>
+          <div>
+            <input type="text" 
+                   id="dashboard-search-input" 
+                   class="table-search-input" 
+                   placeholder="Search your articles..." 
+                   aria-label="Search articles in table">
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col" style="min-width: 280px;">Article Title</th>
+                <th scope="col">Category</th>
+                <th scope="col">Status</th>
+                <th scope="col">Date</th>
+                <th scope="col" style="text-align: right; min-width: 140px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-table-body">
+              <!-- Dynamically rendered via dashboard.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/blog.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

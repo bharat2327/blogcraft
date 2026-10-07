@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlogCraft — Modern Ideas, Technology & Design</title>
+  <meta name="description" content="Discover in-depth engineering, design, and web development insights crafted for modern developers.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar" role="banner">
+    <div class="container">
+      <a href="index.html" class="brand-logo" aria-label="BlogCraft Home">
+        <div class="logo-icon">B</div>
+        <div class="logo-text">Blog<span>Craft</span></div>
+      </a>
+
+      <!-- Desktop & Mobile Nav Links -->
+      <nav id="nav-links" class="nav-links" aria-label="Primary Navigation">
+        <a href="index.html" class="nav-link active">Home</a>
+        <a href="#explore-section" class="nav-link">Explore</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+      </nav>
+
+      <!-- Dynamic Auth / User Action Buttons -->
+      <div class="nav-actions" id="nav-actions">
+        <!-- Rendered dynamically by main.js based on auth state -->
+        <a href="login.html" class="btn btn-secondary btn-sm" id="nav-login-btn">Login</a>
+        <a href="register.html" class="btn btn-primary btn-sm" id="nav-register-btn">Register</a>
+      </div>
+
+      <!-- Mobile Hamburger Toggle -->
+      <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+        ☰
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="site-main">
+
+    <!-- Hero Section -->
+    <section class="hero-section" aria-labelledby="hero-title">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="container hero-content">
+        <div class="hero-tag">
+          <span></span>
+          Fresh Insights & Tech Trends Daily
+        </div>
+        <h1 class="hero-title" id="hero-title">
+          Explore Ideas Shaping the <br>
+          <span class="gradient-text">Future of the Web</span>
+        </h1>
+        <p class="hero-desc">
+          Thoughtfully written articles on frontend development, UI/UX design systems, web performance, and modern JavaScript architectures.
+        </p>
+
+        <!-- Search & Category Filters Component -->
+        <div class="filter-search-container" id="explore-section">
+          <!-- Search Bar -->
+          <div class="search-box-wrapper">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input type="text" 
+                   id="search-blogs-input" 
+                   class="search-input" 
+                   placeholder="Search articles by title, category, keywords..." 
+                   aria-label="Search articles">
+            <button id="clear-search-btn" class="search-clear-btn" aria-label="Clear search" title="Clear">&times;</button>
+          </div>
+
+          <!-- Category Pills -->
+          <div class="category-filter-wrapper" role="tablist" aria-label="Filter by category">
+            <button class="category-pill active" data-category="All" role="tab">All Topics</button>
+            <button class="category-pill" data-category="CSS & Styling" role="tab">CSS & Styling</button>
+            <button class="category-pill" data-category="JavaScript" role="tab">JavaScript</button>
+            <button class="category-pill" data-category="UI/UX Design" role="tab">UI/UX Design</button>
+            <button class="category-pill" data-category="Accessibility" role="tab">Accessibility</button>
+            <button class="category-pill" data-category="Performance" role="tab">Performance</button>
+            <button class="category-pill" data-category="Web Development" role="tab">Web Development</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Container: Featured & Recent Blogs -->
+    <div class="container" style="padding-top: 3.5rem;">
+
+      <!-- Featured Story Section -->
+      <section aria-labelledby="featured-heading">
+        <div id="featured-blog-container">
+          <!-- Injected dynamically by blog.js -->
+        </div>
+      </section>
+
+      <!-- Recent Articles Section -->
+      <section aria-labelledby="recent-heading">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title" id="recent-heading">Latest Publications</h2>
+            <p class="section-subtitle">Read actionable tutorials and deep dives from our community.</p>
+          </div>
+        </div>
+
+        <!-- Dynamic Grid of Blogs -->
+        <div class="blogs-grid" id="recent-blogs-grid">
+          <!-- Blog cards rendered dynamically via blog.js -->
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="index.html" class="brand-logo">
+            <div class="logo-icon">B</div>
+            <div class="logo-text">Blog<span>Craft</span></div>
+          </a>
+          <p>An open, lightweight, and modern publication platform built using pure HTML5, CSS3, and Vanilla JavaScript.</p>
+        </div>
+
+        <div class="footer-column">
+          <h5>Navigation</h5>
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="#explore-section">Explore Articles</a></li>
+            <li><a href="dashboard.html">Author Dashboard</a></li>
+            <li><a href="create-blog.html">Write a Post</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-column">
+          <h5>Categories</h5>
+          <ul>
+            <li><a href="javascript:void(0)" onclick="document.querySelector('[data-category=\'JavaScript\']').click()">JavaScript</a></li>
+            <li><a href="javascript:void(0)" onclick="document.querySelector('[data-category=\'CSS & Styling\']').click()">CSS & Styling</a></li>
+            <li><a href="javascript:void(0)" onclick="document.querySelector('[data-category=\'UI/UX Design\']').click()">UI/UX Design</a></li>
+            <li><a href="javascript:void(0)" onclick="document.querySelector('[data-category=\'Accessibility\']').click()">Accessibility</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-column">
+          <h5>Account</h5>
+          <ul>
+            <li><a href="login.html">Sign In</a></li>
+            <li><a href="register.html">Create Account</a></li>
+            <li><a href="dashboard.html">My Dashboard</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 BlogCraft. Built with Vanilla Web Technologies.</p>
+        <p>Responsive • Accessible • Framework-free</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Notification Container -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/blog.js"></script>
+</body>
+</html>

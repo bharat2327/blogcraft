@@ -1,0 +1,58 @@
+# Dependencies & Package Managers
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+credentials.json
+secrets/
+
+# Python Cache & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+
+# Operating System Temporary Files
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.tmp
+*.bak
+*.swp
+
+# IDE & Editor Temporary Files
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+
+# Antigravity & Agent Scratch Files
+.gemini/
+.system_generated/
+*.log
+
+# Build & Temporary Output Folders
+dist/
+build/
+out/
+.cache/
+tmp/
+scratch/
