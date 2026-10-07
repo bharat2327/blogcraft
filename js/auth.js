@@ -39,6 +39,7 @@ function setCurrentUser(user) {
 
 function logoutUser() {
   localStorage.removeItem(AUTH_STORAGE.CURRENT_USER);
+  localStorage.removeItem('token');
   showToast('Logged out successfully.', 'info');
   setTimeout(() => {
     window.location.href = 'index.html';
@@ -151,7 +152,7 @@ function handleLoginForm() {
     });
   }
 
-  loginForm.addEventListener('submit', (e) => {
+  loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearAllErrors();
 
@@ -180,32 +181,51 @@ function handleLoginForm() {
       return;
     }
 
-    // Authenticate against localStorage users
-    const users = getUsers();
-    const matchedUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (!matchedUser) {
-      setFieldError('email', 'No account found with this email.');
-      showToast('Account not found. Please register first.', 'error');
-      return;
+    const submitBtn = document.getElementById('login-submit-btn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing in...';
     }
 
-    if (matchedUser.password !== password) {
-      setFieldError('password', 'Incorrect password. Try again.');
-      showToast('Invalid email or password.', 'error');
-      return;
+    try {
+      // 1. Call Express Backend POST /api/auth/login
+      const res = await apiRequest('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
+
+      if (res.ok && res.data.success) {
+        // Store JWT token and current user
+        localStorage.setItem('token', res.data.token);
+        setCurrentUser(res.data.user);
+        showToast(`Welcome back, ${res.data.user.name}!`, 'success', 2500);
+
+        const redirectTarget = sessionStorage.getItem('redirect_after_login') || 'dashboard.html';
+        sessionStorage.removeItem('redirect_after_login');
+
+        setTimeout(() => {
+          window.location.href = redirectTarget;
+        }, 700);
+        return;
+      }
+
+      // Check specific error status from backend
+      if (res.status === 401) {
+        setFieldError('email', 'Invalid email or password.');
+        setFieldError('password', 'Invalid email or password.');
+        showToast(res.data.message || 'Invalid email or password.', 'error');
+      } else {
+        showToast(res.data.message || 'Login failed. Please try again.', 'error');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      showToast('An unexpected error occurred during login.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In to Dashboard';
+      }
     }
-
-    // Successful login
-    setCurrentUser(matchedUser);
-    showToast(`Welcome back, ${matchedUser.name}!`, 'success', 2500);
-
-    const redirectTarget = sessionStorage.getItem('redirect_after_login') || 'dashboard.html';
-    sessionStorage.removeItem('redirect_after_login');
-
-    setTimeout(() => {
-      window.location.href = redirectTarget;
-    }, 700);
   });
 }
 
@@ -228,7 +248,7 @@ function handleRegisterForm() {
     });
   }
 
-  registerForm.addEventListener('submit', (e) => {
+  registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearAllErrors();
 
@@ -280,32 +300,42 @@ function handleRegisterForm() {
       return;
     }
 
-    // Check if email already registered
-    const users = getUsers();
-    const emailExists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (emailExists) {
-      setFieldError('email', 'An account with this email already exists.');
-      showToast('Email is already registered. Please login.', 'warning');
-      return;
+    const submitBtn = document.getElementById('register-submit-btn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating account...';
     }
 
-    // Create new user object
-    const newUser = {
-      id: Date.now(),
-      name: name,
-      email: email,
-      password: password
-    };
+    try {
+      // Call Express Backend POST /api/auth/register
+      const res = await apiRequest('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password })
+      });
 
-    users.push(newUser);
-    saveUsers(users);
+      if (res.ok && res.data.success) {
+        showToast('Registration successful! Redirecting to login...', 'success', 2500);
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 1200);
+        return;
+      }
 
-    showToast('Registration successful! Redirecting to login...', 'success', 2500);
-
-    setTimeout(() => {
-      window.location.href = 'login.html';
-    }, 1200);
+      if (res.status === 409) {
+        setFieldError('email', 'An account with this email already exists.');
+        showToast(res.data.message || 'Email already registered. Please login.', 'warning');
+      } else {
+        showToast(res.data.message || 'Registration failed. Please try again.', 'error');
+      }
+    } catch (err) {
+      console.error('Registration error:', err);
+      showToast('An unexpected error occurred during registration.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Author Account';
+      }
+    }
   });
 }
 

@@ -10,13 +10,49 @@ const BLOG_STORAGE_KEY = 'blogcraft_blogs';
 // 1. Data Store Operations
 // ---------------------------------------------------------------------------
 
+// In-memory cache synced with backend and localStorage
+let cachedBlogs = [];
+
+async function getBlogsAsync(filters = {}) {
+  // Try fetching from Express backend GET /api/blogs
+  const queryParams = new URLSearchParams();
+  if (filters.category && filters.category !== 'All') queryParams.set('category', filters.category);
+  if (filters.search) queryParams.set('search', filters.search);
+  if (filters.status) queryParams.set('status', filters.status);
+  if (filters.authorId) queryParams.set('authorId', filters.authorId);
+
+  const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const res = await apiRequest(`/blogs${queryStr}`);
+
+  if (res.ok && res.data && res.data.success && Array.isArray(res.data.blogs)) {
+    cachedBlogs = res.data.blogs;
+    localStorage.setItem(BLOG_STORAGE_KEY, JSON.stringify(cachedBlogs));
+    return cachedBlogs;
+  }
+
+  // Graceful fallback to localStorage
+  const local = localStorage.getItem(BLOG_STORAGE_KEY);
+  cachedBlogs = local ? JSON.parse(local) : [];
+  return cachedBlogs;
+}
+
 function getBlogs() {
-  const blogs = localStorage.getItem(BLOG_STORAGE_KEY);
-  return blogs ? JSON.parse(blogs) : [];
+  if (cachedBlogs && cachedBlogs.length > 0) return cachedBlogs;
+  const local = localStorage.getItem(BLOG_STORAGE_KEY);
+  return local ? JSON.parse(local) : [];
 }
 
 function saveBlogs(blogsList) {
+  cachedBlogs = blogsList;
   localStorage.setItem(BLOG_STORAGE_KEY, JSON.stringify(blogsList));
+}
+
+async function getBlogByIdAsync(id) {
+  const res = await apiRequest(`/blogs/${id}`);
+  if (res.ok && res.data && res.data.success && res.data.blog) {
+    return res.data.blog;
+  }
+  return getBlogById(id);
 }
 
 function getBlogById(id) {
@@ -24,29 +60,49 @@ function getBlogById(id) {
   return blogs.find(b => String(b.id) === String(id)) || null;
 }
 
-function createBlog(data) {
+async function createBlog(data) {
+  const res = await apiRequest('/blogs', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok && res.data && res.data.success && res.data.blog) {
+    await getBlogsAsync(); // Refresh cache
+    return res.data.blog;
+  }
+
+  // Fallback if backend error
   const blogs = getBlogs();
   const currentUser = JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT_USER) || '{}');
-  
   const newBlog = {
     id: Date.now(),
     title: data.title.trim(),
     category: data.category.trim(),
-    image: data.image.trim() || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80',
+    image: data.image ? data.image.trim() : 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80',
     description: data.description.trim(),
     content: data.content.trim(),
     author: currentUser.name || 'Anonymous Author',
+    authorId: currentUser.id || null,
     date: formatDate(new Date()),
     status: data.status || 'published',
     featured: false
   };
-
   blogs.unshift(newBlog);
   saveBlogs(blogs);
   return newBlog;
 }
 
-function updateBlog(id, updatedFields) {
+async function updateBlog(id, updatedFields) {
+  const res = await apiRequest(`/blogs/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(updatedFields)
+  });
+
+  if (res.ok && res.data && res.data.success && res.data.blog) {
+    await getBlogsAsync();
+    return res.data.blog;
+  }
+
   const blogs = getBlogs();
   const index = blogs.findIndex(b => String(b.id) === String(id));
   if (index === -1) return null;
@@ -56,12 +112,20 @@ function updateBlog(id, updatedFields) {
     ...updatedFields,
     updatedAt: formatDate(new Date())
   };
-
   saveBlogs(blogs);
   return blogs[index];
 }
 
-function deleteBlog(id) {
+async function deleteBlog(id) {
+  const res = await apiRequest(`/blogs/${id}`, {
+    method: 'DELETE'
+  });
+
+  if (res.ok && res.data && res.data.success) {
+    await getBlogsAsync();
+    return true;
+  }
+
   let blogs = getBlogs();
   blogs = blogs.filter(b => String(b.id) !== String(id));
   saveBlogs(blogs);
@@ -75,17 +139,17 @@ function deleteBlog(id) {
 let activeCategory = 'All';
 let searchQuery = '';
 
-function initHomePage() {
+async function initHomePage() {
   const blogsGrid = document.getElementById('recent-blogs-grid');
   if (!blogsGrid) return; // Not on home page
 
   setupSearchAndFilters();
-  renderHomeContent();
   setupReaderModal();
+  await renderHomeContent();
 }
 
-function renderHomeContent() {
-  const allBlogs = getBlogs();
+async function renderHomeContent() {
+  const allBlogs = await getBlogsAsync();
   // On homepage, only display published blogs to public readers
   const publishedBlogs = allBlogs.filter(b => b.status === 'published');
 
@@ -324,8 +388,8 @@ function setupReaderModal() {
   }
 }
 
-function openReaderModal(blogId) {
-  const blog = getBlogById(blogId);
+async function openReaderModal(blogId) {
+  const blog = await getBlogByIdAsync(blogId) || getBlogById(blogId);
   if (!blog) {
     showToast('Blog post not found.', 'error');
     return;

@@ -9,8 +9,45 @@
 const STORAGE_KEYS = {
   USERS: 'blogcraft_users',
   CURRENT_USER: 'blogcraft_current_user',
-  BLOGS: 'blogcraft_blogs'
+  BLOGS: 'blogcraft_blogs',
+  TOKEN: 'token'
 };
+
+const API_BASE_URL = 'http://localhost:5000/api';
+
+/**
+ * Universal backend API fetch client with automatic JWT header attachment
+ */
+async function apiRequest(endpoint, options = {}) {
+  const token = localStorage.getItem('token');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {})
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const config = {
+    ...options,
+    headers
+  };
+
+  try {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  } catch (err) {
+    console.warn(`API Connection Error [${endpoint}]:`, err.message);
+    return {
+      ok: false,
+      status: 0,
+      data: { success: false, message: 'Unable to connect to Express backend server (http://localhost:5000).' }
+    };
+  }
+}
+
 
 // Initial default user for seamless evaluation
 const DEFAULT_USERS = [

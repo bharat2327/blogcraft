@@ -9,15 +9,20 @@
 
 let blogToDeleteId = null;
 
-function initDashboardPage() {
+async function initDashboardPage() {
   if (!requireAuth()) return;
 
   const currentUser = getCurrentUser();
   populateUserProfile(currentUser);
-  renderDashboardStats();
-  renderDashboardTable();
   setupDashboardSearch();
   setupDeleteModal();
+  await refreshDashboardData();
+}
+
+async function refreshDashboardData(filterQuery = '') {
+  await getBlogsAsync();
+  renderDashboardStats();
+  renderDashboardTable(filterQuery);
 }
 
 function populateUserProfile(user) {
@@ -176,12 +181,15 @@ function setupDeleteModal() {
     document.getElementById('delete-modal-close').addEventListener('click', closeDialog);
     document.getElementById('delete-cancel-btn').addEventListener('click', closeDialog);
 
-    document.getElementById('delete-confirm-btn').addEventListener('click', () => {
+    document.getElementById('delete-confirm-btn').addEventListener('click', async () => {
       if (blogToDeleteId) {
-        deleteBlog(blogToDeleteId);
-        showToast('Blog post deleted successfully.', 'success');
-        renderDashboardStats();
-        renderDashboardTable();
+        const success = await deleteBlog(blogToDeleteId);
+        if (success) {
+          showToast('Blog post deleted successfully.', 'success');
+        } else {
+          showToast('Could not delete blog post.', 'error');
+        }
+        await refreshDashboardData();
         closeDialog();
       }
     });
@@ -192,8 +200,8 @@ function setupDeleteModal() {
   }
 }
 
-function promptDeleteBlog(blogId) {
-  const blog = getBlogById(blogId);
+async function promptDeleteBlog(blogId) {
+  const blog = await getBlogByIdAsync(blogId) || getBlogById(blogId);
   if (!blog) return;
 
   blogToDeleteId = blogId;
@@ -209,7 +217,7 @@ function promptDeleteBlog(blogId) {
 // 3. Create & Edit Blog Form Logic (create-blog.html)
 // ---------------------------------------------------------------------------
 
-function initCreateBlogPage() {
+async function initCreateBlogPage() {
   if (!requireAuth()) return;
 
   const form = document.getElementById('blog-form');
@@ -258,7 +266,7 @@ function initCreateBlogPage() {
 
   // Pre-fill if Editing an existing blog
   if (isEditing) {
-    const existingBlog = getBlogById(editId);
+    const existingBlog = await getBlogByIdAsync(editId) || getBlogById(editId);
     if (!existingBlog) {
       showToast('Blog post to edit not found.', 'error');
       setTimeout(() => { window.location.href = 'dashboard.html'; }, 1000);
@@ -278,7 +286,7 @@ function initCreateBlogPage() {
   }
 
   // Handle Form Submission
-  const savePost = (targetStatus) => {
+  const savePost = async (targetStatus) => {
     clearAllErrors();
 
     const title = document.getElementById('blog-title').value.trim();
@@ -323,6 +331,8 @@ function initCreateBlogPage() {
       return;
     }
 
+    if (submitPublishBtn) submitPublishBtn.disabled = true;
+
     const blogPayload = {
       title,
       category,
@@ -332,17 +342,23 @@ function initCreateBlogPage() {
       status: targetStatus
     };
 
-    if (isEditing) {
-      updateBlog(editId, blogPayload);
-      showToast(targetStatus === 'published' ? 'Blog updated and published!' : 'Draft changes saved!', 'success');
-    } else {
-      createBlog(blogPayload);
-      showToast(targetStatus === 'published' ? 'Blog published successfully!' : 'Blog saved as draft!', 'success');
-    }
+    try {
+      if (isEditing) {
+        await updateBlog(editId, blogPayload);
+        showToast(targetStatus === 'published' ? 'Blog updated and published!' : 'Draft changes saved!', 'success');
+      } else {
+        await createBlog(blogPayload);
+        showToast(targetStatus === 'published' ? 'Blog published successfully!' : 'Blog saved as draft!', 'success');
+      }
 
-    setTimeout(() => {
-      window.location.href = 'dashboard.html';
-    }, 800);
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 700);
+    } catch (err) {
+      console.error('Error saving post:', err);
+      showToast('Error saving blog post. Please try again.', 'error');
+      if (submitPublishBtn) submitPublishBtn.disabled = false;
+    }
   };
 
   // Publish button click

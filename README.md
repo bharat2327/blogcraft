@@ -1,132 +1,182 @@
-# Module 1 — Frontend Blog Application
+# BlogCraft — Full-Stack Blog Application (Modules 1 & 2)
 
-A modern, responsive, and production-quality frontend blog web application built entirely with semantic **HTML5**, modern **CSS3**, and modular **Vanilla JavaScript**. Designed with zero framework dependencies and full client-side persistence using `localStorage`.
+A modern, responsive, and production-quality full-stack blog web application built with semantic **HTML5**, modern **CSS3**, **Vanilla JavaScript (ES6+)**, and a robust **Node.js + Express.js REST API** backend with JWT authentication and bcrypt password hashing.
 
 ---
+
+# Module 2 — Backend Development
+
+## Backend Technologies
+
+- **Node.js** (v26.5.0)
+- **Express.js** (v4.21.2)
+- **REST API Architecture**
+- **JWT (jsonwebtoken v9.0.2)** for secure stateless token authentication
+- **bcryptjs** (v2.4.3) for cryptographic password hashing
+- **CORS** middleware for configured origin communication
+- **Local Persistence Layer**: Robust JSON file-based database (`backend/data/users.json` and `backend/data/blogs.json`) with auto-seeding, data validation, and persistence across server restarts.
+
+## API Endpoints
+
+| Method | Endpoint | Protection | Description |
+| :--- | :--- | :--- | :--- |
+| **GET** | `/api/health` | Public | Server health status check |
+| **POST** | `/api/auth/register` | Public | Register new user with hashed password |
+| **POST** | `/api/auth/login` | Public | Authenticate user & return JWT token |
+| **GET** | `/api/auth/me` | Protected (`Bearer <token>`) | Get current authenticated user profile |
+| **GET** | `/api/blogs` | Public | Get all blogs (supports `?category`, `?search`, `?status`, `?authorId`) |
+| **GET** | `/api/blogs/:id` | Public | Get a single blog post by ID |
+| **POST** | `/api/blogs` | Protected (`Bearer <token>`) | Create a new blog post (published or draft) |
+| **PUT** | `/api/blogs/:id` | Protected (`Bearer <token>`) | Update own blog post |
+| **DELETE** | `/api/blogs/:id` | Protected (`Bearer <token>`) | Delete own blog post |
+
+## How To Run
+
+### 1. Install Backend Dependencies
+```bash
+cd backend
+npm install
+```
+
+### 2. Configure Environment
+A `.env.example` file is included in the `backend/` folder:
+```text
+PORT=5000
+JWT_SECRET=super-secret-jwt-key-blogcraft-2026
+CLIENT_ORIGIN=http://localhost:8080
+```
+Copy or create `.env`:
+```bash
+cp .env.example .env
+```
+
+### 3. Start Backend Server
+```bash
+# From the backend directory:
+npm start
+# Server starts at: http://localhost:5000
+# Health check: http://localhost:5000/api/health
+```
+
+### 4. Open Frontend
+From the root directory:
+```bash
+# Using Python:
+python -m http.server 8080
+
+# Or using Node.js:
+npx serve . -p 8080
+```
+Open your browser and navigate to:
+```text
+http://localhost:8080/index.html
+```
+
+---
+
+# Module 1 — Frontend Blog Application
 
 ## Overview
 
-**BlogCraft** is an interactive, responsive blogging platform developed as part of **Module 1 — Frontend Development**. It simulates a full-stack content publishing platform entirely in the browser, featuring user authentication, session-protected dashboards, dynamic article creation, live image previews, instant search filtering, and custom non-blocking toast notifications.
-
----
+**BlogCraft** is an interactive, responsive blogging platform developed across **Module 1 (Frontend)** and extended in **Module 2 (Backend)**. It simulates a modern publication platform featuring user authentication, session-protected author dashboards, dynamic article creation, live image previews, instant search filtering, and custom non-blocking toast notifications.
 
 ## Features
 
 - **Responsive Blog UI**: Fluid grid and flexbox design optimized for mobile, tablet, laptop, and desktop viewports with a collapsible hamburger navigation menu.
 - **Modern Typography & Styling**: Custom design system using Google Font *Plus Jakarta Sans*, sleek dark/light color tokens, smooth card hover micro-interactions, and accessible contrast ratios.
-- **Authentication System**:
-  - Author Registration with full client-side validation (full name, email regex, minimum 6-character password, and password confirmation matching).
-  - Secure Login with one-click **"Auto-Fill"** demo credentials and password visibility toggle.
+- **Full-Stack Authentication**:
+  - Author Registration connected to `POST /api/auth/register`.
+  - Secure Login connected to `POST /api/auth/login` storing JWT in `localStorage`.
   - Route protection guarding the author dashboard and article editor.
-  - Session persistence in `localStorage` with dynamic navbar greeting and logout action.
+  - Dynamic navbar greeting and one-click logout action.
 - **Interactive Author Dashboard**:
   - Real-time statistics tracking **Total Articles**, **Published Articles**, and **Saved Drafts**.
-  - Author profile section with initials avatar and contact display.
-  - Dynamic blog management table with thumbnail previews, category pills, status badges (*Published* in green, *Draft* in amber), publication dates, and quick action buttons.
-  - Real-time search filter for articles within the dashboard.
+  - Dynamic blog management table with thumbnail previews, category pills, status badges (*Published* in green, *Draft* in amber), and quick action buttons.
+  - Search filter within the dashboard.
 - **Article Publishing & Management (CRUD)**:
-  - **Create**: Add posts with title, category selector, featured image URL, live image preview box, 4 quick preset image pickers, description, and multi-paragraph article content.
+  - **Create**: Add posts with title, category selector, featured image URL, live image preview box, 4 quick preset image pickers, description, and multi-paragraph article content (`POST /api/blogs`).
   - **Draft vs. Publish**: Dual submission buttons to either publish live immediately or save privately as a draft.
-  - **Read**: Full-screen interactive reader modal to read articles with complete formatting without leaving the page.
-  - **Update**: Edit existing articles via `create-blog.html?edit=[id]` with automatic form pre-population.
-  - **Delete**: Custom modal confirmation dialog to safely remove posts from `localStorage`.
+  - **Read**: Full-screen interactive reader modal to read articles with complete formatting without leaving the page (`GET /api/blogs/:id`).
+  - **Update**: Edit existing articles via `create-blog.html?edit=[id]` (`PUT /api/blogs/:id`).
+  - **Delete**: Custom modal confirmation dialog to safely remove posts (`DELETE /api/blogs/:id`).
 - **Homepage Discovery**:
   - Spotlight Featured Story hero banner.
   - Real-time search input matching titles, summaries, categories, and author names.
   - Interactive category filter pills (*All Topics*, *CSS & Styling*, *JavaScript*, *UI/UX Design*, *Accessibility*, *Performance*, *Web Development*).
 - **Polished UI/UX & Notifications**:
   - Non-blocking custom Toast notification component (`success`, `error`, `warning`, `info`).
-  - Strict absence of disruptive browser `alert()` popups.
 
----
-
-## Technologies
+## Frontend Technologies
 
 - **HTML5**: Semantic elements (`<header>`, `<nav>`, `<main>`, `<article>`, `<aside>`, `<section>`, `<footer>`).
 - **CSS3**: Custom Properties (CSS variables), Flexbox, CSS Grid, Media Queries, glassmorphic backdrop filters, and custom CSS animations.
-- **Vanilla JavaScript (ES6+)**: `localStorage` data management, DOM manipulation, custom event listeners, array methods (`map`, `filter`, `find`), URLSearchParams routing, and regex form validation.
-- **No External Frameworks**: 100% framework-free (no React, Angular, Vue, or TailwindCSS).
+- **Vanilla JavaScript (ES6+)**: Modular client code with native `fetch()` calls communicating with the Express backend.
 
 ---
 
 ## Project Structure
 
 ```text
-blog-application/
+module-1-frontend-blog/
 │
-├── index.html            # Public home page with search, filters, featured & recent blogs
-├── login.html            # Sign-in page with validation and demo auto-fill
-├── register.html         # Registration page with password confirmation
-├── dashboard.html        # Protected author dashboard with stats & blog table
-├── create-blog.html      # Article creator & editor with live image preview
-├── README.md             # Project documentation
-├── .gitignore            # Secret & artifact exclusion rules
+├── frontend files:
+│   ├── index.html            # Public home page with search, filters, featured & recent blogs
+│   ├── login.html            # Sign-in page with validation and demo auto-fill
+│   ├── register.html         # Registration page with password confirmation
+│   ├── dashboard.html        # Protected author dashboard with stats & blog table
+│   ├── create-blog.html      # Article creator & editor with live image preview
+│   ├── css/
+│   │   └── style.css         # Complete modern design system and responsive layout
+│   ├── js/
+│   │   ├── main.js           # Core utilities, API fetch client, toasts, dynamic navbar
+│   │   ├── auth.js           # User registration, login, logout, and route guards
+│   │   ├── blog.js           # Blog CRUD client, home grid, instant search, reading modal
+│   │   └── dashboard.js      # Dashboard analytics, table rendering, delete modal, form handlers
+│   └── assets/
+│       └── images/
+│           └── logo.svg      # Vector brand icon
 │
-├── css/
-│   └── style.css         # Complete modern design system and responsive layout
+├── backend/                  # Module 2 Express Backend
+│   ├── server.js             # Express application & CORS configuration
+│   ├── package.json          # Dependencies & scripts
+│   ├── .env.example          # Environment variable template
+│   ├── routes/
+│   │   ├── auth.routes.js    # Authentication API routes
+│   │   └── blog.routes.js    # Blog CRUD API routes
+│   ├── controllers/
+│   │   ├── auth.controller.js# Auth logic (register, login, JWT)
+│   │   └── blog.controller.js# Blog logic (CRUD operations & ownership)
+│   ├── middleware/
+│   │   └── auth.middleware.js# JWT Bearer token authentication middleware
+│   ├── models/
+│   │   ├── user.model.js     # User data access layer with bcrypt hashing
+│   │   └── blog.model.js     # Blog data access layer with filtering
+│   └── data/
+│       ├── users.json        # Persistent user records
+│       └── blogs.json        # Persistent blog records
 │
-├── js/
-│   ├── main.js           # Core utilities, sample data seeding, toasts, dynamic navbar
-│   ├── auth.js           # User registration, login, logout, and route guards
-│   ├── blog.js           # Blog CRUD store, home grid, instant search, reading modal
-│   └── dashboard.js      # Dashboard analytics, table rendering, delete modal, form handlers
-│
-└── assets/
-    └── images/
-        └── logo.svg      # Vector brand icon
+├── README.md                 # Complete project documentation
+└── .gitignore                # Git exclusions (.env, node_modules, caches)
 ```
-
----
-
-## How to Run
-
-Because BlogCraft uses native web standards and client-side `localStorage`, it requires **no build step, no npm install, and no backend server** to operate!
-
-### Method 1: Using Any Local Web Server (Recommended)
-
-1. Open your terminal in this project directory:
-   ```bash
-   # Using Python 3:
-   python -m http.server 8080
-
-   # Or using Node.js npx:
-   npx serve .
-   ```
-2. Open your browser and navigate to:
-   ```text
-   http://localhost:8080/index.html
-   ```
-
-### Method 2: Open Directly in Any Browser
-
-Double-click `index.html` or right-click and choose **"Open with Google Chrome"** (or Edge, Firefox, Safari).
 
 ---
 
 ## Testing
 
-A pre-configured demo author account is automatically seeded in `localStorage`:
+A pre-configured demo author account is automatically seeded:
 
 - **Email:** `demo@example.com`
 - **Password:** `password123`
 
 ### Verification Checklist:
-- [x] **Home Page:** Search articles, filter by category pills, open reader modal.
-- [x] **Authentication:** Register a new user, test validation, log in, view greeting in navbar.
+- [x] **Backend Health Check:** `GET /api/health` returns status 200.
+- [x] **Auth Endpoints:** `POST /api/auth/register`, `POST /api/auth/login`, and duplicate checks verified.
+- [x] **Blog Endpoints:** `GET /api/blogs`, `POST /api/blogs` (protected), `PUT /api/blogs/:id`, `DELETE /api/blogs/:id` verified.
+- [x] **Backend Persistence:** Data verified persistent across server restarts.
+- [x] **Frontend Home Page:** Search articles, filter by category pills, open reader modal.
+- [x] **Frontend Authentication:** Register new users, log in, receive JWT token, view navbar greeting.
 - [x] **Dashboard Protection:** Accessing `dashboard.html` without login automatically redirects to `login.html`.
-- [x] **Blog Creation:** Create both Published posts and Drafts with live image preview.
-- [x] **Blog Editing:** Edit an existing post and verify updated content in dashboard and homepage.
-- [x] **Blog Deletion:** Delete a post using modal confirmation and verify stats decrement.
-- [x] **Responsiveness:** Test on mobile screens (<= 768px) with hamburger menu.
-
----
-
-## Future Improvements
-
-- Markdown editor support for rich-text code snippets and syntax highlighting.
-- Reading time estimation (e.g., "5 min read") calculated automatically from word counts.
-- Dark mode toggle with persistent user preference in `localStorage`.
-- Client-side export and import of blog posts as JSON backups.
+- [x] **Blog Management:** Create, publish, save draft, edit, and delete articles connected directly to Express backend.
 
 ---
 
