@@ -12,11 +12,13 @@ let mongoServerInstance = null;
 async function connectDB() {
   const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/blog_application';
   
+  const isLocalUri = uri.includes('localhost') || uri.includes('127.0.0.1');
+  
   try {
-    // Attempt standard connection first with a short timeout
+    // Attempt standard connection first (allow 10s for Atlas, 3s for local check)
     mongoose.set('strictQuery', false);
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 3000
+      serverSelectionTimeoutMS: isLocalUri ? 3000 : 10000
     });
     console.log(`✅ MongoDB Connected Successfully: ${mongoose.connection.host}/${mongoose.connection.name}`);
     return mongoose.connection;
