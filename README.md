@@ -1,191 +1,228 @@
 # BlogCraft — Full-Stack Blog Application
 
-A modern, responsive, and production-quality full-stack blog web application built across five integrated modules:
+A modern, responsive, production-quality full-stack blog web application built across six integrated modules:
 - **Module 1**: Modern Frontend UI (HTML5, CSS3, Vanilla JavaScript)
-- **Module 2**: Express.js REST API Backend with JWT Authentication
+- **Module 2**: Express.js REST API Backend Architecture
 - **Module 3**: Database Integration with MongoDB, Mongoose, and Persistent Storage
 - **Module 4**: Complete Blog CRUD Operations, Ownership Authorization, Search & Category Filtering
 - **Module 5**: Secure Authentication & Author Dashboard (JWT Session Management, Per-User Isolation, User Profile & Stats)
+- **Module 6**: Final Project Optimization, Production Configuration, and Multi-Platform Deployment
 
 ---
 
-# Module 5 — Authentication & Dashboard
+## 🔗 Repository Links
 
-## Overview
-Module 5 implements secure end-to-end authentication and an isolated author dashboard. It enforces cryptographic token verification, server-side per-user blog querying (`GET /api/blogs/my`), draft isolation across accounts, author profile customization, session expiration handling, and clear logout behavior.
+- **GitHub Repository**: [https://github.com/bharat2327/blogcraft](https://github.com/bharat2327/blogcraft)
+- **Live Website**: Configured for Render & Vercel deployment (see Deployment section below)
 
-## Core Features
-- **Secure JWT Authentication**:
-  - Signs industry-standard JSON Web Tokens (24-hour expiration policy) with HMAC SHA-256 using `JWT_SECRET` loaded from environment variables.
-  - Password hashing with salted `bcryptjs` (cost factor 10) in Mongoose pre-save middleware. Plaintext passwords and hashes are never exposed in API payloads.
-  - Constant-time verification on server-side protected endpoints via `verifyToken` middleware.
-  - Generic authentication failure responses (`"Invalid email or password."`) to eliminate user enumeration vectors.
-- **Server-Enforced Dashboard Protection**:
-  - Dedicated private endpoint: `GET /api/blogs/my` strictly authenticated with Bearer token.
-  - Rejects unauthenticated requests (HTTP 401), invalid tokens (HTTP 401), and expired tokens (HTTP 401).
-  - Client identity is derived exclusively from the verified server-side token (`req.user.id`), never trusting client-supplied IDs.
-- **Strict Per-User Blog Isolation**:
-  - Dashboard queries MongoDB filtered strictly by `author: req.user.id`.
-  - Author A can never view, update, or delete Author B's articles or private drafts.
-  - Real-time aggregation of author-specific publication metrics: Total Articles, Published Articles, and Drafts.
-- **Author Profile Management**:
-  - Profile inspection via `GET /api/auth/me` and `GET /api/auth/profile` returning name, email, member since timestamp (`createdAt`), and author publication stats.
-  - Profile update via `PUT /api/auth/profile` allowing authors to safely update their full name.
-  - Privilege escalation guard: attempts to alter role, email, password, or `_id` are strictly ignored on the server.
-- **Logout & Session Lifecycle**:
-  - Prominent logout buttons in the sidebar and top navigation clear all authentication tokens and client credentials.
-  - Automated session-expiration detection: when protected requests encounter 401, client credentials are wiped and the user is redirected to `login.html?sessionExpired=true` with a clear warning alert.
-  - *Stateless JWT Architecture Note*: Tokens are stateless; logging out clears the client storage token. For production environments requiring immediate revocation of compromised tokens before expiration, a token blocklist or Redis session store can be layered on top of this foundation.
+---
 
-## REST API Endpoints
+## 🚀 Key Features
+
+### 1. Reader & Public Exploration (Modules 1 & 4)
+- **Responsive Magazine UI**: Fluid layout adapted for desktop, laptop, tablet, and mobile with accessible hamburger navigation.
+- **Visual Design System**: Custom typography scale (*Plus Jakarta Sans*, *JetBrains Mono*), glassmorphic navbars, micro-animations, and curated Unsplash imagery.
+- **Dynamic Discovery**: Real-time client and database-backed keyword search (`?search=`), category filter pills (`?category=`), featured article spotlight, and instant preview modal.
+- **Dedicated Article Reader**: Standalone reader view (`blog.html?id=<BLOG_ID>`) with computed reading time, formatted paragraphs, and author attribution.
+
+### 2. Secure Cryptographic Authentication (Modules 2 & 5)
+- **Salted Password Hashing**: Utilizes `bcryptjs` (salt cost 10) in Mongoose pre-save hooks. Passwords and hashes are strictly stripped from responses via `toJSON`/`toObject` transforms.
+- **HMAC SHA-256 JWTs**: 24-hour expiration tokens signed with environment-loaded `JWT_SECRET`.
+- **Constant-Time Verification**: Server-side Bearer token middleware (`verifyToken`) rejecting missing, invalid, and expired tokens with HTTP 401.
+- **Enumeration Protection**: Generic authentication failure messaging (`"Invalid email or password."`) to eliminate user enumeration vectors.
+- **Session Lifecycle & Route Guarding**: Automated 401 interception that purges client state and triggers friendly redirects (`login.html?sessionExpired=true`).
+
+### 3. Isolated Author Dashboard (Module 5)
+- **Dedicated Protected Endpoint**: `GET /api/blogs/my` derives user identity strictly from verified server-side JWT claims (`req.user.id`).
+- **Guaranteed Cross-User Isolation**: Author A can never view, mutate, or access private drafts created by Author B.
+- **Live Metric Aggregation**: Server-calculated counters for Total Articles, Published Articles, and Saved Drafts.
+- **Author Profile Modal**: In-dashboard profile management displaying member registration date (`createdAt`), publication counters, and safe name updating (`PUT /api/auth/profile`) with immutable privileged fields.
+
+### 4. Full CRUD & Ownership Protection (Modules 4 & 5)
+- **Create**: Authenticated creation of published articles and private drafts via `POST /api/blogs`.
+- **Read**: Public feed filters out unowned drafts while authors manage all their own posts in their private dashboard.
+- **Update**: Authors modify their articles and publish drafts via `PUT /api/blogs/:id` (403 Forbidden for non-owners).
+- **Delete**: Authors permanently remove articles via `DELETE /api/blogs/:id` with interactive confirmation dialogs (403 Forbidden for non-owners).
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technology | Description |
+| :--- | :--- | :--- |
+| **Frontend** | HTML5, CSS3, Vanilla JavaScript | Fast, accessible, framework-free client with no bloated dependencies |
+| **Design System** | Pure CSS3 (Variables, Flexbox, Grid) | Custom theme tokens, micro-animations, glassmorphism, responsive breakpoints |
+| **Backend** | Node.js, Express.js | Modular REST API architecture with controllers, routes, and middleware |
+| **Database** | MongoDB & Mongoose ODM | Document storage, validation schemas, population, compound and text search indexes |
+| **Local Dev Engine**| `mongodb-memory-server` | Zero-configuration local persistent engine for instant testing without pre-running mongod |
+| **Authentication** | `jsonwebtoken` & `bcryptjs` | Stateless Bearer token verification and salted password hashing |
+| **Deployment** | Render, Vercel, Netlify | Unified full-stack Express serving and serverless configuration |
+
+---
+
+## 📂 Project Structure
+
+```text
+blogcraft/
+├── assets/                     # Static media and brand graphics
+├── css/
+│   └── style.css              # Unified design system & responsive stylesheets
+├── js/
+│   ├── auth.js                # Authentication, validation, and session lifecycle
+│   ├── blog.js                # Blog CRUD data operations and homepage controllers
+│   ├── dashboard.js           # Dashboard metrics, article table, and profile modal
+│   └── main.js                # Dynamic API client, navbar updates, and toast system
+├── api/
+│   └── index.js               # Serverless entrypoint for Vercel deployment
+├── backend/
+│   ├── config/
+│   │   └── database.js        # Mongoose connection with Atlas and local fallback
+│   ├── controllers/
+│   │   ├── auth.controller.js # Auth, login, registration, and profile controllers
+│   │   └── blog.controller.js # CRUD, search, filter, and user dashboard controllers
+│   ├── middleware/
+│   │   └── auth.middleware.js # JWT verification and optional authentication
+│   ├── models/
+│   │   ├── Blog.js            # Mongoose Blog schema, virtuals, and search indexes
+│   │   └── User.js            # Mongoose User schema with pre-save bcrypt hashing
+│   ├── routes/
+│   │   ├── auth.routes.js     # Modular authentication routes
+│   │   └── blog.routes.js     # Modular blog and dashboard routes
+│   ├── server.js              # Express app, static serving, and health endpoint
+│   ├── test-module3.js        # Module 3 integration tests
+│   ├── test-module4.js        # Module 4 CRUD and security tests (47 tests)
+│   ├── test-module5.js        # Module 5 authentication & dashboard tests (63 tests)
+│   └── package.json           # Backend dependency manifest
+├── blog.html                  # Standalone article reader view
+├── create-blog.html           # Article writer and draft editor
+├── dashboard.html             # Author dashboard with profile modal
+├── index.html                 # Homepage with featured spotlight and category filters
+├── login.html                 # Sign-in page with demo credentials button
+├── register.html              # Author account registration page
+├── package.json               # Root manifest for unified full-stack deployment
+├── render.yaml                # Render Blueprint deployment specification
+├── vercel.json                # Vercel serverless rewrite configuration
+└── README.md                  # Comprehensive project documentation
+```
+
+---
+
+## 📡 REST API Reference
 
 | Method | Endpoint | Protection | Description |
 | :--- | :--- | :--- | :--- |
-| **GET** | `/api/health` | Public | Server health & MongoDB database connection status (`database: "connected"`) |
+| **GET** | `/api/health` | Public | Server health & database connectivity status (`database: "connected"`) |
 | **POST** | `/api/auth/register` | Public | Register new author with salted bcrypt password hashing |
 | **POST** | `/api/auth/login` | Public | Authenticate against MongoDB and issue signed 24h JWT token |
-| **GET** | `/api/auth/me` | Protected (`Bearer <token>`) | Retrieve current author profile, registration date, and publication statistics |
-| **GET** | `/api/auth/profile` | Protected (`Bearer <token>`) | Alias to `/api/auth/me` for profile modal |
-| **PUT** | `/api/auth/profile` | Protected (`Bearer <token>`) | Safely update author profile name (strictly protects privileged fields) |
-| **GET** | `/api/blogs/my` | Protected (`Bearer <token>`) | Retrieve only the authenticated author's published & draft blogs with stats |
-| **GET** | `/api/blogs` | Public (Optional JWT) | Get published blogs from MongoDB feed. Supports `?search`, `?category`, `?status`. Protects unowned drafts |
-| **GET** | `/api/blogs/:id` | Public (Optional JWT) | Retrieve individual blog by MongoDB ObjectId. Protects private drafts |
+| **GET** | `/api/auth/me` | Protected (`Bearer <token>`) | Current author profile with `createdAt` and live article stats |
+| **GET** | `/api/auth/profile` | Protected (`Bearer <token>`) | Author profile endpoint for dashboard profile modal |
+| **PUT** | `/api/auth/profile` | Protected (`Bearer <token>`) | Update author name (strictly preserves immutable privileged fields) |
+| **GET** | `/api/blogs/my` | Protected (`Bearer <token>`) | Authenticated author's published & draft blogs with calculated metrics |
+| **GET** | `/api/blogs` | Public (Optional JWT) | Public blog feed. Supports `?search`, `?category`, `?status`. Isolates drafts |
+| **GET** | `/api/blogs/:id` | Public (Optional JWT) | Standalone blog post by MongoDB ObjectId. Unowned drafts return 404 |
 | **POST** | `/api/blogs` | Protected (`Bearer <token>`) | Create a new blog post or draft linked to authenticated author |
-| **PUT** | `/api/blogs/:id` | Protected (`Bearer <token>`) | Update own blog post or publish draft (enforces 403 on non-owners) |
-| **DELETE** | `/api/blogs/:id` | Protected (`Bearer <token>`) | Delete own blog post (enforces 403 on non-owners) |
+| **PUT** | `/api/blogs/:id` | Protected (`Bearer <token>`) | Update own blog post or publish draft (403 Forbidden for non-owners) |
+| **DELETE** | `/api/blogs/:id` | Protected (`Bearer <token>`) | Delete own blog post (403 Forbidden for non-owners) |
 
 ---
 
-# Module 4 — CRUD Operations
+## 🧪 Automated Testing Suite (110 Tests)
 
-- **Create**: Authenticated authors publish articles or save private drafts via `POST /api/blogs`. Validates `title`, `category`, `description`, `content`, and status (`draft` | `published`).
-- **Read (All Blogs)**: Public feed retrieves published blogs from MongoDB. Authenticated authors can also view their own drafts in their dashboard.
-- **Read (Individual Details)**: Dedicated standalone page (`blog.html?id=<BLOG_ID>`) fetches single blog details via `GET /api/blogs/:id`. Unauthorized access to private drafts returns 404.
-- **Update**: Authors can edit their own articles and publish drafts via `PUT /api/blogs/:id`. Pre-populates the editor form and persists changes in MongoDB. Modifications by non-authors are rejected with HTTP 403 Forbidden.
-- **Delete**: Authors can permanently remove articles via `DELETE /api/blogs/:id` with interactive confirmation modal dialogs. Unauthorized deletion attempts return HTTP 403 Forbidden.
-- **Search & Filtering**: Real-time and database-backed search matching title, description, category, and author. Category filtering with active pill toggles, combined multi-factor queries, and friendly empty-state fallbacks with one-click filter resets.
-- **Database Indexes**: Compound and text search indexes on MongoDB Blog collection (`{ status: 1, createdAt: -1 }`, `{ category: 1, status: 1 }`, `{ author: 1 }`, `{ title: 'text', description: 'text' }`).
+BlogCraft features a comprehensive automated testing suite covering all integration points.
 
----
+Run all tests from the repository root:
+```bash
+npm test
+```
 
-# Module 3 — Database Integration
-
-- **Database**: MongoDB with Mongoose ODM.
-- Supports standalone local MongoDB, MongoDB Atlas via `MONGODB_URI`, and includes an embedded local persistent storage engine (`mongodb-memory-server`) for zero-configuration testing and evaluation.
-
----
-
-# Module 2 — Backend Architecture
-
-- Express.js modular REST API with separate routers and controllers.
-- Bearer token verification middleware and centralized error handling.
-- CORS configuration supporting dev server and browser origins.
-
----
-
-# Module 1 — Frontend Blog UI
-
-- Responsive layout (desktop, tablet, mobile) with accessible mobile navigation.
-- Curated design system: typography with *Plus Jakarta Sans*, sleek dark-mode accents, glassmorphic styling, and micro-animations.
-- Interactive author dashboard with publication counters, responsive table, and live search.
-- Standalone reading view (`blog.html`) and quick-read modal preview.
-- Non-blocking accessible toast notification system.
-
----
-
-## Automated Test Suites (110 Total Tests)
-
-Run the full automated test suite:
+Or execute within `backend/`:
 ```bash
 cd backend
 npm test
 ```
 
-This sequentially executes:
-1. **Module 3 Suite (`test-module3.js`)**: Health checks, database connection, user registration, bcrypt password hashing, login, blog creation, and data persistence.
-2. **Module 4 Suite (`test-module4.js` - 47 Tests)**: Full CRUD operations, ownership verification, private drafts, search, category filtering, combined filtering, and persistence.
-3. **Module 5 Suite (`test-module5.js` - 63 Tests)**:
-   - Valid registration & bcrypt verification
-   - Duplicate email rejection (409 Conflict)
-   - Successful login with signed JWT issuance
-   - Invalid login rejection & generic error messages
-   - Missing token rejection on `/api/blogs/my` (401)
-   - Forged/invalid token rejection (401)
-   - Expired token rejection (401)
-   - Protected dashboard API (`GET /api/blogs/my`)
-   - Account A sees only Account A's blogs & drafts
-   - Account B sees only Account B's blogs & drafts
-   - Account A cannot read Account B's private drafts (404)
-   - Account A cannot update Account B's blog (403 Forbidden)
-   - Account A cannot delete Account B's blog (403 Forbidden)
-   - User profile inspection with `createdAt` and statistics
-   - User profile update restricting privileged fields
-   - Client logout and credential absence handling
-   - Server-side authorization enforcement across all protected endpoints
-   - Full regression suite for Module 1–4 capabilities
-
-Run individual test suites:
-```bash
-npm run test:m5   # Module 5 tests only
-npm run test:m4   # Module 4 tests only
-```
+### Test Suite Breakdown:
+1. **Module 3 Suite (`test-module3.js`)**: Health verification, database connection, user registration, bcrypt password hashing, login, blog creation, population, and data persistence.
+2. **Module 4 Suite (`test-module4.js` — 47 Tests)**: Authenticated create, unauthenticated rejection (401), reading feed, reading individual blog, 404 handling, editing own blog, cross-user edit rejection (403), deleting own blog, cross-user delete rejection (403), draft privacy, publishing drafts, keyword search, category filtering, combined filtering, and persistence.
+3. **Module 5 Suite (`test-module5.js` — 63 Tests)**: Valid registration, duplicate email rejection (409), successful login, invalid login rejection (401 with generic message), missing token rejection (401), invalid/tampered token rejection (401), expired token rejection (401), protected dashboard API (`GET /api/blogs/my`), Account A vs Account B blog isolation, draft isolation, cross-user update/delete protection, profile retrieval with `createdAt` and stats, profile updating with privilege escalation guards, client logout handling, and full regression checks.
 
 ---
 
-## How To Run Locally
+## 💻 Local Installation & Setup
 
-### 1. Install Backend Dependencies
+### 1. Clone the Repository
 ```bash
-cd backend
+git clone https://github.com/bharat2327/blogcraft.git
+cd blogcraft
+```
+
+### 2. Install Dependencies
+```bash
 npm install
+cd backend && npm install && cd ..
 ```
 
-### 2. Configure Environment Variables
+### 3. Environment Variables Setup
+Create `backend/.env`:
 ```bash
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
-Default `.env` configuration:
+
+Configuration variables:
 ```env
 PORT=5000
 MONGODB_URI=mongodb://localhost:27017/blog_application
-JWT_SECRET=replace-with-a-secure-secret
+JWT_SECRET=your-secure-jwt-secret-key-here
 CLIENT_ORIGIN=http://localhost:8080
 ```
+> *Note: If a standalone MongoDB instance is not detected on port 27017, the application automatically initializes an embedded local MongoDB engine, allowing immediate local execution with zero setup.*
 
-### 3. Start Backend Server
+### 4. Start the Application
+Run the unified full-stack server from the root directory:
 ```bash
-cd backend
 npm start
 ```
-Server runs at `http://localhost:5000`. Health check: `http://localhost:5000/api/health`.
+The application will be live at `http://localhost:5000`.
 
-### 4. Run Automated Tests
+Alternatively, run the backend server and frontend dev server separately:
 ```bash
+# Terminal 1: Backend
 cd backend
-npm test
-```
+npm run dev
 
-### 5. Start Frontend
-From the root project directory:
-```bash
-# Using Python:
-python -m http.server 8080
-
-# Or using Node.js:
+# Terminal 2: Frontend
 npx serve . -p 8080
 ```
 
-Access in browser:
-- Home Page: `http://localhost:8080/index.html`
-- Sign In: `http://localhost:8080/login.html`
-- Register: `http://localhost:8080/register.html`
-- Author Dashboard: `http://localhost:8080/dashboard.html`
-- Create / Edit Blog: `http://localhost:8080/create-blog.html`
-- Standalone Blog Post: `http://localhost:8080/blog.html?id=<BLOG_ID>`
+---
+
+## 🌐 Production Deployment Architecture
+
+BlogCraft supports two streamlined deployment architectures:
+
+### Option A: Unified Full-Stack on Render (Recommended)
+Express serves both the REST API and the static frontend, eliminating CORS complexity.
+
+1. Connect your GitHub repository (`bharat2327/blogcraft`) to [Render](https://render.com).
+2. Create a new **Web Service**:
+   - **Environment**: Node
+   - **Build Command**: `npm install && cd backend && npm install`
+   - **Start Command**: `node backend/server.js`
+3. Configure Environment Variables in Render Dashboard:
+   - `NODE_ENV`: `production`
+   - `JWT_SECRET`: `<generate-a-secure-random-secret>`
+   - `MONGODB_URI`: `<your-mongodb-atlas-connection-string>`
+
+### Option B: Vercel Deployment
+The repository includes a `vercel.json` and `api/index.js` configuration:
+1. Import `bharat2327/blogcraft` in [Vercel](https://vercel.com).
+2. Set Environment Variables (`MONGODB_URI`, `JWT_SECRET`, `NODE_ENV=production`).
+3. Deploy directly.
 
 ---
 
-## Author & Repository
+## 👤 Author
 
 - **Developer:** Bharat
-- **Repository:** https://github.com/bharat2327/blogcraft.git
+- **GitHub:** [@bharat2327](https://github.com/bharat2327)
+- **Repository:** [https://github.com/bharat2327/blogcraft](https://github.com/bharat2327/blogcraft)

@@ -1,0 +1,32 @@
+{
+  "name": "blogcraft",
+  "version": "1.0.0",
+  "description": "BlogCraft — Full-Stack Blog Application",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js",
+    "build": "cd backend && npm install",
+    "test": "cd backend && npm test",
+    "test:m5": "cd backend && npm run test:m5",
+    "test:m4": "cd backend && npm run test:m4"
+  },
+  "keywords": [
+    "blog",
+    "express",
+    "mongodb",
+    "jwt",
+    "full-stack"
+  ],
+  "author": "Bharat",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb-memory-server": "^11.3.0",
+    "mongoose": "^9.11.0"
+  }
+}

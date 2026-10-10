@@ -62,11 +62,36 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/blogs', blogRoutes);
 
-// 404 handler
-app.use((req, res) => {
+// Serve static frontend assets for unified production deployment
+const frontendDir = path.join(__dirname, '..');
+app.use(express.static(frontendDir));
+
+// Route handlers for frontend pages
+app.get('/', (req, res) => {
+  res.sendFile(path.join(frontendDir, 'index.html'));
+});
+
+// Explicit API 404 handler for unmatched /api routes
+app.use('/api', (req, res) => {
   res.status(404).json({
     success: false,
     message: `API route ${req.method} ${req.originalUrl} not found.`
+  });
+});
+
+// Fallback for HTML routing
+app.use((req, res, next) => {
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    const fs = require('fs');
+    const targetPath = path.join(frontendDir, req.path);
+    if (fs.existsSync(targetPath) && fs.statSync(targetPath).isFile()) {
+      return res.sendFile(targetPath);
+    }
+    return res.sendFile(path.join(frontendDir, 'index.html'));
+  }
+  res.status(404).json({
+    success: false,
+    message: `Resource ${req.method} ${req.originalUrl} not found.`
   });
 });
 
@@ -99,9 +124,12 @@ app.use((err, req, res, next) => {
     });
   }
 
+  const isProd = process.env.NODE_ENV === 'production';
   res.status(err.status || 500).json({
     success: false,
-    message: err.message || 'Internal server error occurred.'
+    message: isProd && (!err.status || err.status === 500)
+      ? 'An internal server error occurred.'
+      : (err.message || 'Internal server error occurred.')
   });
 });
 

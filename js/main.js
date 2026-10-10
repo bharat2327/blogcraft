@@ -13,7 +13,22 @@ const STORAGE_KEYS = {
   TOKEN: 'token'
 };
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = (function() {
+  if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
+    return window.__API_BASE_URL__;
+  }
+  if (typeof window !== 'undefined' && window.location) {
+    const host = window.location.hostname;
+    const port = window.location.port;
+    // Local development frontend dev server (port 8080, 3000, 5500, etc.)
+    if ((host === 'localhost' || host === '127.0.0.1') && port && port !== '5000') {
+      return 'http://localhost:5000/api';
+    }
+    // Deployed production domain or unified Express server
+    return '/api';
+  }
+  return 'http://localhost:5000/api';
+})();
 
 /**
  * Universal backend API fetch client with automatic JWT header attachment
