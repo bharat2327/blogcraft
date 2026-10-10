@@ -46,11 +46,12 @@
     <aside class="dashboard-sidebar" aria-label="Sidebar Navigation">
       <div>
         <!-- Profile Card -->
-        <div class="sidebar-profile">
+        <div class="sidebar-profile" id="sidebar-profile-card" onclick="openProfileModal()" style="cursor: pointer;" title="View & edit your profile">
           <div class="sidebar-avatar user-avatar-text">U</div>
           <div class="profile-meta">
             <h4 class="user-display-name">Author</h4>
             <p class="user-display-email">author@example.com</p>
+            <span style="display:inline-block; margin-top: 0.25rem; font-size: 0.75rem; color: var(--primary); font-weight: 700;">👤 Manage Profile &rarr;</span>
           </div>
         </div>
 
@@ -60,6 +61,12 @@
             <a href="dashboard.html" class="sidebar-nav-link active">
               <span class="icon">📊</span>
               <span>All Articles</span>
+            </a>
+          </li>
+          <li>
+            <a href="#profile" class="sidebar-nav-link" id="sidebar-nav-profile-btn" onclick="openProfileModal(); return false;">
+              <span class="icon">👤</span>
+              <span>My Profile</span>
             </a>
           </li>
           <li>
@@ -78,7 +85,7 @@
       </div>
 
       <div class="sidebar-footer">
-        <button class="btn btn-outline btn-sm" style="width: 100%;" onclick="logoutUser()">
+        <button class="btn btn-outline btn-sm" id="sidebar-logout-btn" style="width: 100%;" onclick="logoutUser()">
           🚪 Logout Account
         </button>
       </div>
@@ -159,6 +166,71 @@
       </div>
 
     </main>
+  </div>
+
+  <!-- Author Profile Modal (Module 5 Profile Management) -->
+  <div id="profile-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" id="profile-modal-title">👤 Author Profile</h3>
+        <button class="modal-close-btn" id="profile-modal-close" aria-label="Close profile modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Profile Identity & Badges -->
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border-color);">
+          <div class="sidebar-avatar user-avatar-text" style="width: 56px; height: 56px; font-size: 1.5rem;">U</div>
+          <div>
+            <h4 class="user-display-name" style="font-size: 1.2rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.2rem;">Author</h4>
+            <p class="user-display-email" style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.4rem;">author@example.com</p>
+            <span class="badge badge-primary" id="profile-member-since">Member since: Loading...</span>
+          </div>
+        </div>
+
+        <!-- Author Publications Statistics -->
+        <div style="margin-bottom: 1.5rem;">
+          <h5 style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem;">Your Article Statistics</h5>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+            <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-md); text-align: center;">
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary);" id="profile-stat-total">0</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Total Posts</div>
+            </div>
+            <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-md); text-align: center;">
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--success);" id="profile-stat-published">0</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Published</div>
+            </div>
+            <div style="background: var(--bg-subtle); padding: 0.75rem; border-radius: var(--radius-md); text-align: center;">
+              <div style="font-size: 1.4rem; font-weight: 800; color: var(--warning);" id="profile-stat-drafts">0</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Drafts</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Edit Form -->
+        <form id="profile-edit-form" novalidate onsubmit="return false;">
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="profile-name-input" class="form-label" style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.35rem;">Full Name</label>
+            <input type="text" id="profile-name-input" class="form-input" style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid var(--border-color); border-radius: var(--radius-md);" required minlength="2" autocomplete="name">
+            <span class="field-error-msg" id="profile-name-error" style="color: var(--danger); font-size: 0.8rem; display: none; margin-top: 0.25rem;"></span>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.5rem;">
+            <label for="profile-email-input" class="form-label" style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.35rem;">Email Address <span style="font-weight: 400; color: var(--text-muted); font-size: 0.8rem;">(Primary Account ID)</span></label>
+            <input type="email" id="profile-email-input" class="form-input" disabled style="width: 100%; padding: 0.65rem 0.85rem; border: 1.5px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-subtle); cursor: not-allowed; opacity: 0.85;">
+            <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.35rem;">
+              Email is tied to your cryptographic authentication identity and cannot be altered here.
+            </small>
+          </div>
+
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 1rem; line-height: 1.4;">
+            🔒 <em>Security notice:</em> Sensitive internal credentials, password hashes, and JWT secrets are strictly guarded on the server and never sent to browser storage.
+          </p>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" id="profile-modal-cancel">Close</button>
+        <button type="button" class="btn btn-primary btn-sm" id="profile-modal-save">Save Profile Changes</button>
+      </div>
+    </div>
   </div>
 
   <!-- Toast Notification Container -->

@@ -58,10 +58,31 @@ function request(path, options = {}) {
   });
 }
 
+async function ensureServerRunning() {
+  return new Promise((resolve) => {
+    const checkReq = http.request('http://127.0.0.1:5000/api/health', { method: 'GET', timeout: 600 }, (res) => {
+      resolve(true);
+    });
+    checkReq.on('error', async () => {
+      try {
+        const { startServer } = require('./server');
+        await startServer();
+        await new Promise(r => setTimeout(r, 600));
+        resolve(true);
+      } catch (e) {
+        resolve(false);
+      }
+    });
+    checkReq.end();
+  });
+}
+
 async function runTestSuite() {
   console.log('====================================================');
   console.log('BLOGCRAFT — MODULE 4 FULL CRUD & SECURITY TEST SUITE');
   console.log('====================================================\n');
+
+  await ensureServerRunning();
 
   let passed = 0;
   let failed = 0;

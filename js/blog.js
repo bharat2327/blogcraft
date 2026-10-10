@@ -13,6 +13,37 @@ const BLOG_STORAGE_KEY = 'blogcraft_blogs';
 
 // In-memory cache synced with backend
 let cachedBlogs = [];
+let cachedUserBlogs = [];
+let userBlogStats = { total: 0, published: 0, drafts: 0 };
+
+async function getUserDashboardBlogsAsync(filters = {}) {
+  // Query Express backend GET /api/blogs/my (strictly authenticated per-user blogs)
+  const queryParams = new URLSearchParams();
+  if (filters.search) queryParams.set('search', filters.search);
+  if (filters.status) queryParams.set('status', filters.status);
+
+  const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const res = await apiRequest(`/blogs/my${queryStr}`);
+
+  if (res.ok && res.data && res.data.success && Array.isArray(res.data.blogs)) {
+    cachedUserBlogs = res.data.blogs;
+    if (res.data.stats) {
+      userBlogStats = res.data.stats;
+    }
+    return { blogs: cachedUserBlogs, stats: userBlogStats };
+  }
+
+  console.warn('Could not retrieve user dashboard blogs:', (res.data && res.data.message) || 'Unauthorized or server unavailable');
+  return { blogs: [], stats: { total: 0, published: 0, drafts: 0 } };
+}
+
+function getUserDashboardBlogs() {
+  return cachedUserBlogs;
+}
+
+function getUserDashboardStats() {
+  return userBlogStats;
+}
 
 function getBlogAuthorName(blog) {
   if (!blog) return 'Author';

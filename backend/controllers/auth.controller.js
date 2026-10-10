@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Blog = require('../models/Blog');
 const { JWT_SECRET } = require('../middleware/auth.middleware');
 
 function isValidEmail(email) {
@@ -156,7 +157,7 @@ const AuthController = {
     }
   },
 
-  // GET /api/auth/me (Protected)
+  // GET /api/auth/me (Protected - Module 5 Profile display)
   async getMe(req, res) {
     try {
       const user = await User.findById(req.user.id).select('-password');
@@ -167,18 +168,99 @@ const AuthController = {
         });
       }
 
+      // Compute statistics for the authenticated user
+      const [totalBlogs, publishedBlogs, draftBlogs] = await Promise.all([
+        Blog.countDocuments({ author: user._id }),
+        Blog.countDocuments({ author: user._id, status: 'published' }),
+        Blog.countDocuments({ author: user._id, status: 'draft' })
+      ]);
+
       return res.status(200).json({
         success: true,
         user: {
           id: user._id.toString(),
           name: user.name,
-          email: user.email
+          email: user.email,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          stats: {
+            total: totalBlogs,
+            published: publishedBlogs,
+            drafts: draftBlogs
+          }
         }
       });
     } catch (err) {
+      console.error('Server error retrieving user profile:', err);
       return res.status(500).json({
         success: false,
         message: 'Server error retrieving user profile.'
+      });
+    }
+  },
+
+  // PUT /api/auth/profile (Protected - Module 5 Profile update)
+  async updateProfile(req, res) {
+    try {
+      const { name } = req.body;
+
+      if (!name || !name.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Full name is required.'
+        });
+      }
+
+      if (name.trim().length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: 'Name must be at least 2 characters long.'
+        });
+      }
+
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User account not found.'
+        });
+      }
+
+      // Restrict modification strictly to safe profile fields (never alter role, email, password, or _id)
+      user.name = name.trim();
+      await user.save();
+
+      // Synchronize authorName on blogs owned by this author
+      await Blog.updateMany({ author: user._id }, { authorName: user.name });
+
+      // Retrieve current blog stats
+      const [totalBlogs, publishedBlogs, draftBlogs] = await Promise.all([
+        Blog.countDocuments({ author: user._id }),
+        Blog.countDocuments({ author: user._id, status: 'published' }),
+        Blog.countDocuments({ author: user._id, status: 'draft' })
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Profile updated successfully.',
+        user: {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          stats: {
+            total: totalBlogs,
+            published: publishedBlogs,
+            drafts: draftBlogs
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Update profile error:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error updating profile.'
       });
     }
   }

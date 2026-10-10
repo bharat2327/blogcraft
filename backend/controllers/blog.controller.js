@@ -2,6 +2,61 @@ const mongoose = require('mongoose');
 const Blog = require('../models/Blog');
 
 const BlogController = {
+  // GET /api/blogs/my (Protected - Module 5 Dashboard Endpoint)
+  async getMyBlogs(req, res) {
+    try {
+      // Authenticated user ID comes strictly from verified server-side JWT
+      const userId = req.user.id;
+      const { search, status } = req.query;
+
+      const andConditions = [{ author: userId }];
+
+      if (status === 'draft') {
+        andConditions.push({ status: 'draft' });
+      } else if (status === 'published') {
+        andConditions.push({ status: 'published' });
+      }
+
+      if (search && search.trim()) {
+        const searchRegex = new RegExp(search.trim(), 'i');
+        andConditions.push({
+          $or: [
+            { title: searchRegex },
+            { description: searchRegex },
+            { category: searchRegex }
+          ]
+        });
+      }
+
+      const query = { $and: andConditions };
+
+      // Compute statistics and fetch user's blogs in parallel
+      const [blogs, totalCount, publishedCount, draftCount] = await Promise.all([
+        Blog.find(query).populate('author', 'name email').sort({ createdAt: -1 }),
+        Blog.countDocuments({ author: userId }),
+        Blog.countDocuments({ author: userId, status: 'published' }),
+        Blog.countDocuments({ author: userId, status: 'draft' })
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        count: blogs.length,
+        stats: {
+          total: totalCount,
+          published: publishedCount,
+          drafts: draftCount
+        },
+        blogs
+      });
+    } catch (err) {
+      console.error('Error fetching user dashboard blogs:', err);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error retrieving user dashboard blogs.'
+      });
+    }
+  },
+
   // GET /api/blogs
   async getAllBlogs(req, res) {
     try {

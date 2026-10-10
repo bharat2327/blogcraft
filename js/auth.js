@@ -28,11 +28,14 @@ function getCurrentUser() {
 }
 
 function setCurrentUser(user) {
-  // Store user without password
+  if (!user) return;
+  // Store user without password and secrets
   const safeUser = {
-    id: user.id,
+    id: user.id || user._id,
     name: user.name,
-    email: user.email
+    email: user.email,
+    createdAt: user.createdAt,
+    stats: user.stats || null
   };
   localStorage.setItem(AUTH_STORAGE.CURRENT_USER, JSON.stringify(safeUser));
 }
@@ -40,6 +43,9 @@ function setCurrentUser(user) {
 function logoutUser() {
   localStorage.removeItem(AUTH_STORAGE.CURRENT_USER);
   localStorage.removeItem('token');
+  if (typeof cachedUserBlogs !== 'undefined') {
+    cachedUserBlogs = [];
+  }
   showToast('Logged out successfully.', 'info');
   setTimeout(() => {
     window.location.href = 'index.html';
@@ -48,10 +54,12 @@ function logoutUser() {
 
 /**
  * Route protection guard for private pages (dashboard.html, create-blog.html)
+ * Verifies both token existence and user object
  */
 function requireAuth() {
+  const token = localStorage.getItem('token');
   const user = getCurrentUser();
-  if (!user) {
+  if (!token || !user) {
     // Save attempted page for intelligent redirect if needed
     const currentFile = window.location.pathname.split('/').pop();
     sessionStorage.setItem('redirect_after_login', currentFile);
@@ -59,6 +67,39 @@ function requireAuth() {
     return false;
   }
   return true;
+}
+
+/**
+ * Fetch fresh user profile and statistics from the backend
+ */
+async function fetchCurrentUserProfile() {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+
+  const res = await apiRequest('/auth/me');
+  if (res.ok && res.data && res.data.success && res.data.user) {
+    setCurrentUser(res.data.user);
+    return res.data.user;
+  }
+  return null;
+}
+
+/**
+ * Update authenticated user profile name
+ */
+async function updateUserProfile(name) {
+  const res = await apiRequest('/auth/profile', {
+    method: 'PUT',
+    body: JSON.stringify({ name })
+  });
+
+  if (res.ok && res.data && res.data.success && res.data.user) {
+    setCurrentUser(res.data.user);
+    return { success: true, user: res.data.user };
+  }
+
+  const errorMsg = (res.data && res.data.message) || 'Failed to update profile.';
+  return { success: false, message: errorMsg };
 }
 
 /**
@@ -124,10 +165,22 @@ function handleLoginForm() {
   const loginForm = document.getElementById('login-form');
   if (!loginForm) return;
 
-  // Check if redirected because auth was required
+  // Check if redirected because session expired or auth was required
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('authRequired') === 'true') {
-    showToast('Please sign in to access that page.', 'warning');
+  const sessionBanner = document.getElementById('session-alert-banner');
+
+  if (urlParams.get('sessionExpired') === 'true') {
+    showToast('Your session has expired or is invalid. Please sign in again.', 'warning', 4500);
+    if (sessionBanner) {
+      sessionBanner.textContent = '⏱️ Your session has expired or is invalid. Please sign in again to continue.';
+      sessionBanner.style.display = 'block';
+    }
+  } else if (urlParams.get('authRequired') === 'true') {
+    showToast('Please sign in to access that page.', 'warning', 3500);
+    if (sessionBanner) {
+      sessionBanner.textContent = '🔒 Authentication required: Please sign in to access your author dashboard.';
+      sessionBanner.style.display = 'block';
+    }
   }
 
   // Pre-fill demo button

@@ -37,6 +37,20 @@ async function apiRequest(endpoint, options = {}) {
   try {
     const res = await fetch(`${API_BASE_URL}${endpoint}`, config);
     const data = await res.json().catch(() => ({}));
+
+    // Detect expired or revoked authentication token on protected endpoints
+    if (res.status === 401 && !endpoint.startsWith('/auth/login') && !endpoint.startsWith('/auth/register')) {
+      console.warn(`[Auth Guard] Token expired or rejected by server on ${endpoint}`);
+      localStorage.removeItem('token');
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+
+      const currentFile = window.location.pathname.split('/').pop();
+      if (currentFile === 'dashboard.html' || currentFile === 'create-blog.html') {
+        sessionStorage.setItem('redirect_after_login', currentFile);
+        window.location.href = 'login.html?sessionExpired=true';
+      }
+    }
+
     return { ok: res.ok, status: res.status, data };
   } catch (err) {
     console.warn(`API Connection Error [${endpoint}]:`, err.message);

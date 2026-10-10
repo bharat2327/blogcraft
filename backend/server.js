@@ -227,8 +227,21 @@ async function startServer() {
   }
 }
 
+async function stopServer() {
+  try {
+    const { disconnectDB } = require('./config/database');
+    if (serverInstance) {
+      await new Promise(resolve => serverInstance.close(resolve));
+      serverInstance = null;
+    }
+    await disconnectDB();
+  } catch (err) {
+    console.error('Error stopping server:', err);
+  }
+}
+
 if (require.main === module) {
   startServer();
 }
 
-module.exports = { app, startServer };
+module.exports = { app, startServer, stopServer };
