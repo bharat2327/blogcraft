@@ -10,10 +10,11 @@ A modern, responsive, production-quality full-stack blog web application built a
 
 ---
 
-## 🔗 Repository Links
+## 🔗 Repository & Live Deployment Links
 
 - **GitHub Repository**: [https://github.com/bharat2327/blogcraft](https://github.com/bharat2327/blogcraft)
-- **Live Website**: Configured for Render & Vercel deployment (see Deployment section below)
+- **Live Production Website**: [https://blogcraft-40lj.onrender.com](https://blogcraft-40lj.onrender.com)
+- **Live Health Endpoint**: [https://blogcraft-40lj.onrender.com/api/health](https://blogcraft-40lj.onrender.com/api/health)
 
 ---
 
@@ -126,25 +127,27 @@ blogcraft/
 
 ---
 
-## 🧪 Automated Testing Suite (110 Tests)
+## 🧪 Automated Testing Suite (148 Passing Tests)
 
-BlogCraft features a comprehensive automated testing suite covering all integration points.
+BlogCraft features a comprehensive automated testing suite covering all integration points and live deployment endpoints:
+- **110 Local Integration Tests**: 100% Pass Rate
+- **38 Live Production Smoke Tests**: 100% Pass Rate against `https://blogcraft-40lj.onrender.com`
 
-Run all tests from the repository root:
+Run all local integration tests:
 ```bash
 npm test
 ```
 
-Or execute within `backend/`:
+Run live production smoke tests against the deployed URL:
 ```bash
-cd backend
-npm test
+npm run test:live
 ```
 
 ### Test Suite Breakdown:
 1. **Module 3 Suite (`test-module3.js`)**: Health verification, database connection, user registration, bcrypt password hashing, login, blog creation, population, and data persistence.
 2. **Module 4 Suite (`test-module4.js` — 47 Tests)**: Authenticated create, unauthenticated rejection (401), reading feed, reading individual blog, 404 handling, editing own blog, cross-user edit rejection (403), deleting own blog, cross-user delete rejection (403), draft privacy, publishing drafts, keyword search, category filtering, combined filtering, and persistence.
 3. **Module 5 Suite (`test-module5.js` — 63 Tests)**: Valid registration, duplicate email rejection (409), successful login, invalid login rejection (401 with generic message), missing token rejection (401), invalid/tampered token rejection (401), expired token rejection (401), protected dashboard API (`GET /api/blogs/my`), Account A vs Account B blog isolation, draft isolation, cross-user update/delete protection, profile retrieval with `createdAt` and stats, profile updating with privilege escalation guards, client logout handling, and full regression checks.
+4. **Module 6 Live Production Suite (`test-live-deployment.js` — 38 Tests)**: Real HTTPS endpoint verification on Render (`https://blogcraft-40lj.onrender.com`), `/api/health` database verification, static CSS/JS delivery, live user registration, duplicate rejection, invalid login rejection, JWT authentication, author dashboard isolation, live blog creation, reading by ID, updating, author metric verification, deletion, and 404 confirmation.
 
 ---
 
@@ -200,21 +203,24 @@ npx serve . -p 8080
 
 BlogCraft supports two streamlined deployment architectures:
 
-### Option A: Unified Full-Stack on Render (Recommended)
+### Option A: Unified Full-Stack on Render (Verified Live Deployment)
 Express serves both the REST API and the static frontend, eliminating CORS complexity.
 
-1. Connect your GitHub repository (`bharat2327/blogcraft`) to [Render](https://render.com).
-2. Create a new **Web Service**:
-   - **Environment**: Node
-   - **Build Command**: `npm install && cd backend && npm install`
-   - **Start Command**: `node backend/server.js`
-3. Configure Environment Variables in Render Dashboard:
-   - `NODE_ENV`: `production`
-   - `JWT_SECRET`: `<generate-a-secure-random-secret>`
-   - `MONGODB_URI`: `<your-mongodb-atlas-connection-string>`
+- **Status**: **LIVE & VERIFIED**
+- **Public Website URL**: [https://blogcraft-40lj.onrender.com](https://blogcraft-40lj.onrender.com)
+- **Health Check Endpoint**: [https://blogcraft-40lj.onrender.com/api/health](https://blogcraft-40lj.onrender.com/api/health)
+- **Render Service ID**: `srv-db5lc1d9fdbs73d9958g`
+- **Hosting Tier**: Free ($0.00 / month)
+- **Free Plan Limitation**: Spins down after 15 minutes of inactivity. When a request is made after spinning down, a cold-start delay of approximately 30–50 seconds occurs while the container boots up; subsequent requests respond instantly.
+
+#### Render Deployment Configuration:
+- **Build Command**: `npm install && cd backend && npm install`
+- **Start Command**: `node backend/server.js`
+- **Health Check Path**: `/api/health`
+- **Runtime**: `Node.js 24.x`
 
 ### Option B: Vercel Deployment
-The repository includes a `vercel.json` and `api/index.js` configuration:
+The repository includes a `vercel.json` and `api/index.js` configuration for serverless execution:
 1. Import `bharat2327/blogcraft` in [Vercel](https://vercel.com).
 2. Set Environment Variables (`MONGODB_URI`, `JWT_SECRET`, `NODE_ENV=production`).
 3. Deploy directly.

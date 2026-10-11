@@ -8,6 +8,7 @@
     "dev": "node --watch backend/server.js",
     "build": "cd backend && npm install",
     "test": "cd backend && npm test",
+    "test:live": "node backend/test-live-deployment.js",
     "test:m5": "cd backend && npm run test:m5",
     "test:m4": "cd backend && npm run test:m4"
   },

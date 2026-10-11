@@ -60,3 +60,5 @@ scratch/
 .vercel/
 backend/data/mongodb_data/
 mongodb_data/
+render_bin/
+render_cli.zip
